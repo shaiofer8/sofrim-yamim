@@ -233,3 +233,133 @@ async function registerPeriodicSync() {
 
 registerPeriodicSync();
 document.addEventListener("sofrim-yamim:event-added", registerPeriodicSync); // permission may have just been granted (Story 2.2)
+
+// Story 2.5: fallback check, runs on every app open (cold start or
+// returning from background) -- Periodic Background Sync (Story 2.4) is
+// unreliable by nature (AD-6: requires an installed PWA + high
+// engagement score, may just never fire). This check depends on nothing
+// but regular Notification permission (see showFallbackNotification()'s
+// two-tier delivery below) and runs in the page -- so unlike the Service
+// Worker, it reads localStorage directly through app.js's own
+// loadEvents()/daysUntil(), not the IndexedDB snapshot.
+const NOTIFIED_TODAY_KEY = "sofrim-yamim.notified-today.v1";
+
+// Mirrors service-worker.js's tomorrowDateStr() (same local-date string
+// format, no shared helper possible across page/worker contexts -- see
+// that file's own comment on hand-syncing this kind of constant).
+function todayDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function loadNotifiedMap() {
+  try {
+    return JSON.parse(localStorage.getItem(NOTIFIED_TODAY_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+// Keeps this bounded to at most one entry per event currently on the
+// list -- drops entries for events that were since deleted, regardless
+// of what date they're stamped with.
+function pruneNotifiedMap(map, events) {
+  const liveIds = new Set(events.map((ev) => ev?.id));
+  const pruned = {};
+  for (const id of Object.keys(map)) {
+    if (liveIds.has(id)) pruned[id] = map[id];
+  }
+  return pruned;
+}
+
+// Same tag convention as service-worker.js's periodic-sync path (Story
+// 2.4) -- deliberately shared, not "-fallback-" suffixed, so if both
+// mechanisms ever fire for the same event the OS collapses them into one
+// notification (via `tag`) instead of showing two separate alerts.
+async function showFallbackNotification(ev, diff) {
+  const title = ev.name;
+  const options = {
+    body: diff === 0 ? "היום" : "מחר",
+    tag: `sofrim-yamim-reminder-${ev.id}`,
+    renotify: true,
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    dir: "rtl",
+    lang: "he",
+  };
+  if ("serviceWorker" in navigator) {
+    try {
+      // Raced against a timeout: if the SW never activates (a real
+      // registration failure, not just "still starting"), this must not
+      // hang the whole check forever -- fall through to the plain
+      // constructor below instead.
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("serviceWorker.ready timed out")), 3000)),
+      ]);
+      await registration.showNotification(title, options);
+      return true;
+    } catch (err) {
+      console.debug("[sofrim-yamim] SW-based notification failed, trying plain constructor:", err);
+    }
+  }
+  try {
+    // No active SW required -- the true "depends on nothing but
+    // Notification permission" path, less reliable on some platforms
+    // (notably Android) than the SW route above, but strictly better
+    // than showing nothing.
+    new Notification(title, options);
+    return true;
+  } catch (err) {
+    console.debug("[sofrim-yamim] plain Notification constructor also failed:", err);
+    return false;
+  }
+}
+
+let fallbackCheckInFlight = false;
+
+async function checkFallbackReminders() {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  if (typeof loadEvents !== "function" || typeof daysUntil !== "function") return; // app.js not loaded yet somehow -- bail defensively
+  if (fallbackCheckInFlight) return; // cold-start + a rapid visibilitychange could otherwise race on the same localStorage read/write
+  fallbackCheckInFlight = true;
+
+  try {
+    const today = todayDateStr();
+    const notifiedMap = loadNotifiedMap();
+    const events = loadEvents();
+    const due = [];
+    for (const ev of events) {
+      if (!ev?.id || !ev?.date || !ev?.name) continue; // matches the SW-side filter's same defensive checks (Story 2.4)
+      const diff = daysUntil(ev.date);
+      if (Number.isNaN(diff)) continue; // malformed date -- silent skip, not a crash
+      if ((diff === 0 || diff === 1) && notifiedMap[ev.id] !== today) {
+        due.push({ ev, diff });
+      }
+    }
+
+    for (const { ev, diff } of due) {
+      const shown = await showFallbackNotification(ev, diff);
+      if (shown) notifiedMap[ev.id] = today;
+      // else: not marked notified -- worth trying again on the next open.
+    }
+
+    // Save (with pruning) on every check, not only when something new
+    // was due -- otherwise a deleted event's map entry would never get
+    // cleaned up once every remaining event has already been notified
+    // today.
+    localStorage.setItem(NOTIFIED_TODAY_KEY, JSON.stringify(pruneNotifiedMap(notifiedMap, events)));
+  } catch (err) {
+    // Whole body covered, not just the notification calls -- e.g. a
+    // localStorage write failing (quota exceeded, private browsing) must
+    // stay silent like everything else in this best-effort feature (AD-6).
+    console.debug("[sofrim-yamim] checkFallbackReminders failed (non-blocking):", err);
+  } finally {
+    fallbackCheckInFlight = false;
+  }
+}
+
+checkFallbackReminders(); // cold start / initial open
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkFallbackReminders(); // returning from background
+});

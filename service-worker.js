@@ -1,4 +1,4 @@
-const CACHE_NAME = "sofrim-yamim-v24";
+const CACHE_NAME = "sofrim-yamim-v26";
 const ASSETS = [
   "/",
   "/index.html",
@@ -126,7 +126,7 @@ async function notifyForTomorrow() {
         // not a defensive extra.
         await self.registration.showNotification(ev.name, {
           body: "מחר",
-          tag: `sofrim-yamim-reminder-${ev.id}`, // de-dupes if this ever fires twice for the same event
+          tag: `sofrim-yamim-reminder-${ev.id}`, // shared with notifications.js's fallback check (Story 2.5) -- same tag on purpose, so the two mechanisms collapse into one notification instead of showing two
           renotify: true, // re-alert (sound/vibration) even on a same-tag replacement -- a silent retry that never actually surfaces defeats a best-effort feature that may need exactly that retry
           icon: "/icons/icon-192.png",
           badge: "/icons/icon-192.png",

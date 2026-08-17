@@ -37,3 +37,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-periodic-background-sync.md`
   summary: The reminder notification's `badge` option reuses the full-color `icons/icon-192.png` asset. Android renders `badge` as a monochrome silhouette mask in the status bar; a detailed full-color icon not designed for that treatment may look wrong/illegible once masked.
   evidence: Blind-hunter review of Story 2.4 flagged this. Not fixed here because it needs a dedicated masked-badge image asset (like `gen_icons.py` produced the existing icons), which is asset-creation work, not something to improvise inline in a code-review fix.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-fallback-reminder-check.md`
+  summary: `checkFallbackReminders()` only runs on script load (cold start) and on `visibilitychange`->visible (returning from background) — an app kept open and foregrounded continuously across local midnight, with no backgrounding or reload, never re-checks, so an event that becomes "today" while the tab stays frontmost the whole time can be missed until the next background/foreground cycle.
+  evidence: Blind-hunter review of Story 2.5 flagged this. Not fixed here because it matches the story's AC exactly ("האפליקציה נפתחת" — the check runs on open/resume, not continuously) — adding a standing timer to also catch the "left open across midnight" case is a different, additional mechanism the AC doesn't ask for.
