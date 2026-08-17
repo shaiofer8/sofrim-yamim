@@ -11,7 +11,7 @@ updated: 2026-08-17
 
 ## Foundation
 
-משטח יחיד: PWA שנעטף ל-TWA, Android/Google Play בלבד ב-v1 (ר' PRD §5). עברית RTL מלאה, מובייל-פורטרט בלבד. `DESIGN.md` הוא מקור-האמת לזהות הוויזואלית; מסמך זה הוא ה-experience. אין UI system חיצוני בשימוש (לא shadcn/MUI) — HTML/CSS/JS וניל, תואם לשלד הקיים. כהה-בלבד כברירת מחדל וכיחיד ב-v1 (ר' DESIGN.md.Brand & Style, `[ASSUMPTION]`).
+משטח יחיד: PWA שנעטף ל-TWA, Android/Google Play בלבד ב-v1 (ר' PRD §5). עברית RTL מלאה, מובייל-פורטרט בלבד. `DESIGN.md` הוא מקור-האמת לזהות הוויזואלית; מסמך זה הוא ה-experience. אין UI system חיצוני בשימוש (לא shadcn/MUI) — HTML/CSS/JS וניל, תואם לשלד הקיים. תומך במצב בהיר וכהה לפי `prefers-color-scheme` של המערכת (הוחלט ע"י שי, 2026-08-17 — ר' DESIGN.md.Brand & Style, Story 1.9); כהה נשאר הפלטה הכהה-ראשונית התפיסתית של המותג, לא היחידה הנתמכת.
 
 ## ארכיטקטורת מידע
 
