@@ -29,3 +29,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-3-settings-dialog.md`
   summary: The Settings dialog's notification toggle only re-checks `Notification.permission` when the dialog is opened (and after the user interacts with the toggle itself) — if the user changes the permission via the browser's own site-settings UI (e.g. the address-bar padlock) while the Settings dialog happens to still be open, the toggle/hint go stale until the dialog is closed and reopened.
   evidence: Blind-hunter review of Story 2.3 flagged this. Not fixed here because a live fix requires the `Permissions` API's `PermissionStatus.onchange` event (`navigator.permissions.query({name: "notifications"})`), a meaningfully bigger addition for an edge case (user has both the app's Settings dialog AND the browser's own permission UI open at the same time) that the story's AC doesn't ask for.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-4-periodic-background-sync.md`
+  summary: `notifyForTomorrow()` fires one separate `showNotification()` per matching event with no cap or grouping — a user with several events landing on the exact same date gets a burst of individual notifications instead of one summary notification.
+  evidence: Blind-hunter review of Story 2.4 flagged this. Not fixed here because proper grouping (a single "N events tomorrow" notification, or a collapsed/expandable one) is real UX design work the story's AC doesn't ask for, and the current one-per-event behavior is at least correct, just potentially noisy in a rare case (multiple events on the same day).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-4-periodic-background-sync.md`
+  summary: The reminder notification's `badge` option reuses the full-color `icons/icon-192.png` asset. Android renders `badge` as a monochrome silhouette mask in the status bar; a detailed full-color icon not designed for that treatment may look wrong/illegible once masked.
+  evidence: Blind-hunter review of Story 2.4 flagged this. Not fixed here because it needs a dedicated masked-badge image asset (like `gen_icons.py` produced the existing icons), which is asset-creation work, not something to improvise inline in a code-review fix.

@@ -155,7 +155,7 @@ function refreshSettingsDialog() {
     notifHint.textContent = "יש לאשר התראות בהגדרות הדפדפן או המכשיר.";
   } else if (permission === "granted") {
     notifHint.hidden = false;
-    notifHint.textContent = "התראות מאושרות. ניתן לשנות זאת בהגדרות הדפדפן או המכשיר.";
+    notifHint.textContent = "התראות מאושרות. תזכורות מתוזמנות דורשות גם התקנת האפליקציה.";
   } else {
     notifHint.hidden = true;
   }
@@ -189,8 +189,47 @@ notifToggle.addEventListener("change", () => {
         if (result === "granted" && typeof announce === "function") {
           announce("התראות אושרו.");
         }
+        if (result === "granted") registerPeriodicSync(); // may have just become possible
       });
   } catch {
     refreshSettingsDialog();
   }
 });
+
+// Story 2.4: best-effort registration of Periodic Background Sync, so the
+// Service Worker can wake up and check for tomorrow's events even with
+// no tab open. Requires the PWA to be installed AND a browser-computed
+// engagement score high enough (AD-6) -- neither is something this code
+// can detect or control in advance, so not registering is an entirely
+// expected, silent outcome, not an error. Retried (cheap, idempotent) on
+// every load and right after any grant, since those conditions can
+// become true later even if they aren't yet.
+const REMINDER_SYNC_TAG = "sofrim-yamim-reminders";
+
+async function registerPeriodicSync() {
+  if (!("serviceWorker" in navigator)) return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return; // no point without permission
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    if (!("periodicSync" in registration)) return; // unsupported browser
+    // Not every browser recognizes this permission name -- e.g. Firefox/
+    // Safari throw here rather than resolve, which the outer catch below
+    // handles the same as any other "can't do this" outcome.
+    const status = await navigator.permissions.query({ name: "periodic-background-sync" });
+    if (status.state !== "granted") return; // AD-6: not installed / engagement too low / etc.
+    await registration.periodicSync.register(REMINDER_SYNC_TAG, {
+      minInterval: 24 * 60 * 60 * 1000, // once a day is enough for a "day before" reminder
+    });
+    // console, not announce()/UI -- this is entirely best-effort per AD-6
+    // and never something to surface to the user, but a feature this
+    // hard to verify (requires an installed PWA + real engagement over
+    // time) deserves at least a developer-facing confirmation that
+    // registration itself succeeded.
+    console.debug("[sofrim-yamim] periodicSync registered:", REMINDER_SYNC_TAG);
+  } catch (err) {
+    console.debug("[sofrim-yamim] periodicSync registration unavailable (expected per AD-6):", err);
+  }
+}
+
+registerPeriodicSync();
+document.addEventListener("sofrim-yamim:event-added", registerPeriodicSync); // permission may have just been granted (Story 2.2)
