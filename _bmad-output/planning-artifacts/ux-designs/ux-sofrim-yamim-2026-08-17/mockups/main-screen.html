@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>סופרים ימים — מוק-אפ מסך ראשי</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap');
+
+  :root {
+    --bg-base: #150c2e;
+    --bg-elev: #201338;
+    --surface-glass: rgba(38, 24, 63, 0.65);
+    --surface-glass-border: rgba(255, 255, 255, 0.08);
+    --accent-violet: #7c5cff;
+    --accent-pink: #ff5f8f;
+    --text-primary: #f4f1fb;
+    --text-secondary: #b0a6c9;
+    --text-disabled: #6e6488;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Heebo', -apple-system, "Segoe UI", Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 12px;
+  }
+
+  .phone {
+    width: 390px;
+    max-width: 100%;
+    background: var(--bg-base);
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 0 0 8px #0a0618, 0 30px 60px rgba(0,0,0,0.5);
+    min-height: 780px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 24px 20px 16px;
+    background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  header h1 { font-size: 1.25rem; margin: 0; font-weight: 700; }
+
+  .header-actions { display: flex; gap: 10px; }
+
+  .chip-btn, .settings-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  main {
+    flex: 1;
+    padding: 20px 16px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  /* Hero Card */
+  .hero-card {
+    position: relative;
+    border-radius: 24px;
+    padding: 28px 24px;
+    background: var(--surface-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--surface-glass-border);
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .hero-card::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: radial-gradient(circle at 30% 20%, rgba(124,92,255,0.35), transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(255,95,143,0.3), transparent 55%);
+    z-index: 0;
+  }
+
+  .hero-emoji { font-size: 2.2rem; position: relative; z-index: 1; }
+
+  .hero-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 6px 0 2px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-date {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-count {
+    font-size: 4.2rem;
+    font-weight: 800;
+    line-height: 1;
+    margin: 14px 0 2px;
+    background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 0.8rem;
+    color: var(--text-disabled);
+    font-weight: 500;
+    margin-bottom: -8px;
+  }
+
+  /* Compact row */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: var(--surface-glass);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--surface-glass-border);
+  }
+
+  .row.past { opacity: 0.5; }
+
+  .row-emoji { font-size: 1.5rem; }
+
+  .row-info { flex: 1; min-width: 0; }
+
+  .row-name { font-weight: 600; font-size: 0.95rem; }
+
+  .row-date { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+
+  .row-count { text-align: center; min-width: 56px; }
+
+  .row-count .num {
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: block;
+  }
+
+  .row-count .lbl { font-size: 0.62rem; color: var(--text-secondary); }
+
+  /* FAB */
+  .fab {
+    position: absolute;
+    bottom: 28px;
+    left: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 300;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(124,92,255,0.4);
+  }
+
+  .phone-frame-note {
+    position: relative;
+  }
+
+  .ad-banner {
+    padding: 10px 16px;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-disabled);
+    background: var(--bg-elev);
+    border-top: 1px solid var(--surface-glass-border);
+  }
+
+  .caption {
+    max-width: 390px;
+    margin: 16px auto 0;
+    font-size: 0.85rem;
+    color: #888;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div>
+  <div class="phone">
+    <header>
+      <h1>🗓️ סופרים ימים</h1>
+      <div class="header-actions">
+        <button class="settings-btn">⚙️</button>
+        <button class="chip-btn">✡️</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="hero-card">
+        <div class="hero-emoji">🍎</div>
+        <div class="hero-name">ראש השנה</div>
+        <div class="hero-date">11 בספטמבר 2026</div>
+        <div class="hero-count">12</div>
+        <div class="hero-label">ימים נותרו</div>
+      </div>
+
+      <div class="section-label">שאר האירועים</div>
+
+      <div class="row">
+        <div class="row-emoji">🎂</div>
+        <div class="row-info">
+          <div class="row-name">יום הולדת לאמא</div>
+          <div class="row-date">2 באוקטובר 2026</div>
+        </div>
+        <div class="row-count"><span class="num">33</span><span class="lbl">ימים</span></div>
+      </div>
+
+      <div class="row">
+        <div class="row-emoji">🕎</div>
+        <div class="row-info">
+          <div class="row-name">חנוכה</div>
+          <div class="row-date">4 בדצמבר 2026</div>
+        </div>
+        <div class="row-count"><span class="num">96</span><span class="lbl">ימים</span></div>
+      </div>
+
+      <div class="row past">
+        <div class="row-emoji">✈️</div>
+        <div class="row-info">
+          <div class="row-name">טיול לאילת</div>
+          <div class="row-date">3 באוגוסט 2026</div>
+        </div>
+        <div class="row-count"><span class="num">14</span><span class="lbl">ימים עברו</span></div>
+      </div>
+    </main>
+
+    <div class="ad-banner">מקום לפרסומת שקטה — לא נצפה כשאין רכישת "הסרת פרסומות"</div>
+
+    <div class="fab">+</div>
+  </div>
+  <p class="caption">מוק-אפ מצב "יש אירועים" — Hero Card לאירוע הקרוב + Compact Rows. ראו DESIGN.md / EXPERIENCE.md למפרט המלא.</p>
+</div>
+</body>
+</html>
