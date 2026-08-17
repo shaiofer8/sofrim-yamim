@@ -148,7 +148,8 @@ body {
 
 .hero-card:active { transform: scale(0.98); }
 
-.hero-card:focus-visible {
+.hero-card:focus-visible,
+.event-card:focus-visible {
   outline: 2px solid var(--accent-pink);
   outline-offset: 2px;
 }
@@ -212,15 +213,17 @@ body {
 .event-card {
   /* no backdrop-filter here by design: blur is reserved for the elevated
      Hero Card treatment (Story 1.2) to avoid stacking blur across many
-     simultaneously-rendered scrolling rows. */
+     simultaneously-rendered scrolling rows. rounded-md, not -lg (Story
+     1.3) -- Hero/dialog keep the larger radius, Compact Row doesn't. */
   background: var(--surface-glass);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   padding: 16px 18px;
   display: flex;
   align-items: center;
   gap: 14px;
   cursor: pointer;
   border: 1px solid var(--surface-glass-border);
+  min-height: 48px;
   transition: transform 0.15s ease;
 }
 

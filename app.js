@@ -49,10 +49,14 @@ function countLabel(diff) {
   return { num: Math.abs(diff), label: "ימים עברו" };
 }
 
-function heroDaysLabel(diff) {
-  if (diff === 0) return "היום";
-  if (diff === 1) return "מחר";
-  return `${diff} ימים`;
+// Speaks the exact same count text already shown on screen (countLabel's
+// num/label), so screen-reader users hear what sighted users see -- rather
+// than a separately-worded phrase that can drift out of sync. The bare
+// celebratory emoji ("🎉") is dropped since screen readers mangle a
+// standalone emoji with no text around it.
+function ariaCountText(num, label) {
+  if (!label || label === "🎉") return String(num);
+  return `${num} ${label}`;
 }
 
 function renderHero(ev) {
@@ -82,7 +86,7 @@ function renderHero(ev) {
   `;
   heroEl.setAttribute("role", "button");
   heroEl.setAttribute("tabindex", "0");
-  heroEl.setAttribute("aria-label", `אירוע קרוב ביותר: ${ev.name}, ${heroDaysLabel(diff)}`);
+  heroEl.setAttribute("aria-label", `אירוע קרוב ביותר: ${ev.name}, ${ariaCountText(num, label)}`);
   heroEl.onclick = () => openEditDialog(ev);
   heroEl.onkeydown = (e) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -115,7 +119,7 @@ function render() {
     const diff = daysUntil(ev.date);
     const { num, label } = countLabel(diff);
 
-    const card = document.createElement("article");
+    const card = document.createElement("div");
     card.className = "event-card" + (diff < 0 ? " past" : "");
     card.innerHTML = `
       <div class="event-emoji">${ev.emoji}</div>
@@ -128,7 +132,19 @@ function render() {
         <span class="label">${label}</span>
       </div>
     `;
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    // Unlike the Hero Card's aria-label (fixed format, Story 1.2), rows
+    // also speak the date: with several rows in a list, the relative day
+    // count alone isn't enough to tell them apart by ear.
+    card.setAttribute("aria-label", `${ev.name}, ${formatHebrewDate(ev.date)}, ${ariaCountText(num, label)}`);
     card.addEventListener("click", () => openEditDialog(ev));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openEditDialog(ev);
+      }
+    });
     listEl.appendChild(card);
   }
 }
