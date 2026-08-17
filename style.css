@@ -1,13 +1,30 @@
 :root {
-  --bg: #150c2e;
+  /* DESIGN.md color tokens */
+  --bg-base: #150c2e;
   --bg-elev: #201338;
-  --card: #26183f;
-  --accent: #ff5f8f;
-  --accent2: #7c5cff;
-  --text: #f4f1fb;
-  --text-dim: #b0a6c9;
+  --surface-glass: rgba(38, 24, 63, 0.65);
+  --surface-glass-border: rgba(255, 255, 255, 0.08);
+  --accent-violet: #7c5cff;
+  --accent-pink: #ff5f8f;
+  --text-primary: #f4f1fb;
+  --text-secondary: #b0a6c9;
+  --text-disabled: #8a84a8;
   --danger: #ff5f5f;
-  --radius: 18px;
+
+  /* DESIGN.md rounded scale */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  /* DESIGN.md spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 28px;
+  --space-7: 40px;
+
   color-scheme: dark;
 }
 
@@ -16,9 +33,9 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Heebo", Arial, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Heebo", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   min-height: 100dvh;
 }
 
@@ -31,7 +48,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 16px) 20px 16px;
-  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
   position: sticky;
   top: 0;
   z-index: 5;
@@ -64,7 +81,7 @@ body {
   border-radius: 50%;
   border: none;
   background: #fff;
-  color: var(--accent2);
+  color: var(--accent-violet);
   font-size: 1.6rem;
   line-height: 1;
   font-weight: bold;
@@ -82,14 +99,17 @@ body {
 }
 
 .event-card {
-  background: var(--card);
-  border-radius: var(--radius);
+  /* no backdrop-filter here by design: blur is reserved for the elevated
+     Hero Card treatment (Story 1.2) to avoid stacking blur across many
+     simultaneously-rendered scrolling rows. */
+  background: var(--surface-glass);
+  border-radius: var(--radius-lg);
   padding: 16px 18px;
   display: flex;
   align-items: center;
   gap: 14px;
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid var(--surface-glass-border);
   transition: transform 0.15s ease;
 }
 
@@ -118,7 +138,7 @@ body {
 }
 
 .event-date {
-  color: var(--text-dim);
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin-top: 2px;
 }
@@ -132,7 +152,8 @@ body {
 .event-count .num {
   font-size: 1.6rem;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -142,12 +163,12 @@ body {
 
 .event-count .label {
   font-size: 0.7rem;
-  color: var(--text-dim);
+  color: var(--text-secondary);
 }
 
 .empty-state {
   text-align: center;
-  color: var(--text-dim);
+  color: var(--text-secondary);
   margin-top: 60px;
   line-height: 1.8;
   padding: 0 20px;
@@ -155,10 +176,12 @@ body {
 
 dialog {
   border: none;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 0;
-  background: var(--bg-elev);
-  color: var(--text);
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--text-primary);
   width: min(420px, 92vw);
 }
 
@@ -180,15 +203,15 @@ dialog h2 {
 
 label {
   font-size: 0.85rem;
-  color: var(--text-dim);
+  color: var(--text-secondary);
   margin-top: 6px;
 }
 
 input, select {
-  background: var(--card);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--text);
-  border-radius: 10px;
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-glass-border);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
   padding: 12px;
   font-size: 1rem;
   width: 100%;
@@ -208,21 +231,21 @@ button {
 
 .btn-primary, .btn-secondary, .btn-danger {
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   padding: 11px 18px;
   font-size: 0.95rem;
   cursor: pointer;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
   color: #fff;
   font-weight: 600;
 }
 
 .btn-secondary {
   background: rgba(255,255,255,0.08);
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .btn-danger {
@@ -232,7 +255,7 @@ button {
 }
 
 .presets-hint {
-  color: var(--text-dim);
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin: -4px 0 4px;
 }
@@ -252,8 +275,9 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--card);
-  border-radius: 12px;
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   cursor: pointer;
 }
@@ -264,6 +288,6 @@ button {
 }
 
 .presets-list li .p-date {
-  color: var(--text-dim);
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
