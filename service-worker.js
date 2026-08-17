@@ -1,10 +1,11 @@
-const CACHE_NAME = "sofrim-yamim-v16";
+const CACHE_NAME = "sofrim-yamim-v18";
 const ASSETS = [
   "/",
   "/index.html",
   "/style.css",
   "/app.js",
   "/holidays.js",
+  "/notifications.js",
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",

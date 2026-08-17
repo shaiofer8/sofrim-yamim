@@ -6,6 +6,7 @@
 ## מבנה הפרויקט
 - `index.html` / `style.css` / `app.js` — האפליקציה עצמה
 - `holidays.js` — רשימת חגים ישראליים/יהודיים מוכנה מראש (הזווית הייחודית)
+- `notifications.js` — תזכורות (Epic 2): נטען אחרי `app.js`, שומר תמונת-קריאה ל-IndexedDB עבור ה-Service Worker
 - `manifest.json` + `service-worker.js` — הופכים את זה ל-PWA אמיתי (התקנה, עבודה אופליין)
 - `icons/` — אייקוני האפליקציה (נוצרו ע"י `gen_icons.py`)
 - `privacy-policy.html` — מדיניות פרטיות (נדרש ל-Google Play)

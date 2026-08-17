@@ -54,6 +54,14 @@ function loadEvents() {
 
 function saveEvents(events) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  // Story 2.1: keep the Service Worker's IndexedDB snapshot in sync on
+  // every save. Guarded, not a hard dependency -- notifications.js loads
+  // after this file (AD-1) and defines the function by the time any user
+  // interaction can actually call saveEvents(), but this stays safe even
+  // if that script is ever missing/fails to load.
+  if (typeof syncIndexedDBSnapshot === "function") {
+    syncIndexedDBSnapshot(events);
+  }
 }
 
 function daysUntil(dateStr) {
