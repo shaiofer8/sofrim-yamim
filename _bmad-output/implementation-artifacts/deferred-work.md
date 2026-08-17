@@ -17,3 +17,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-accessibility-floor.md`
   summary: No automated test coverage (unit/e2e/axe-style) exists anywhere in this repo for keyboard/focus/touch-target/contrast behavior — every verification in every story so far has been a one-off Playwright script run by the implementing agent, not a committed, re-runnable regression guard.
   evidence: Blind-hunter review of Story 1.5 flagged this. Not fixed here because introducing a test framework is an architectural decision (AD-1 chose zero build-step/vanilla JS specifically; most JS test runners assume Node/npm tooling) that needs human buy-in, not something to decide unilaterally inside an accessibility-floor story.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-8-microcopy-pass.md`
+  summary: `loadEvents()` silently swallows a `JSON.parse` failure (returns `[]`, discarding whatever was actually stored) and `saveEvents()` has no error handling at all — a user whose `localStorage` write silently fails (private/incognito mode, quota exceeded) still sees the "האירוע נשמר." success announcement and celebration, with no indication the save didn't actually persist.
+  evidence: Blind-hunter review of Story 1.8 flagged this. Not fixed here because it's a functional gap (missing error-handling + a new failure-state UI surface), not a wording/tone issue — out of scope for a microcopy-alignment pass, which only touches existing user-visible text, not adds new error-handling flows.
