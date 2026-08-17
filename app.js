@@ -35,6 +35,7 @@ const deleteBtn = document.getElementById("deleteBtn");
 
 const presetsDialog = document.getElementById("presetsDialog");
 const presetsList = document.getElementById("presetsList");
+const presetsEmptyEl = document.getElementById("presetsEmpty");
 
 let editingId = null;
 
@@ -306,10 +307,44 @@ deleteBtn.addEventListener("click", () => {
   announce("האירוע נמחק.");
 });
 
+// Story 1.6 / FR-5: holidays.js needs manual yearly upkeep (see its own
+// TODO comment). A holiday missing its `date`, or one nobody updated past
+// its own date, must not break the list -- it's a silent gap in content,
+// not a bug. "Valid" means present, a real parseable ISO date, and not
+// already in the past (mirrors daysUntil()'s own >= 0 "current/upcoming"
+// semantics used everywhere else in this file).
+function isValidHolidayDate(dateStr) {
+  const match = typeof dateStr === "string" && /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (!match) return false;
+  const [, y, m, d] = match.map(Number);
+  const parsed = new Date(dateStr + "T00:00:00");
+  if (Number.isNaN(parsed.getTime())) return false;
+  // JS's Date constructor silently *rolls over* out-of-range values
+  // instead of rejecting them (e.g. "2026-02-30" quietly becomes March 2)
+  // -- round-trip the parsed components back against the original string
+  // so a typo renders as "missing" rather than as a wrong-but-plausible date.
+  if (parsed.getFullYear() !== y || parsed.getMonth() + 1 !== m || parsed.getDate() !== d) return false;
+  return daysUntil(dateStr) >= 0;
+}
+
+// Single accessor so any future feature reading HOLIDAY_PRESETS (search,
+// a "today's holiday" banner, etc.) gets the same filtering for free
+// instead of needing to remember to reapply isValidHolidayDate itself.
+function getValidHolidayPresets() {
+  const valid = HOLIDAY_PRESETS.filter((h) => isValidHolidayDate(h.date));
+  const skipped = HOLIDAY_PRESETS.length - valid.length;
+  if (skipped > 0) {
+    console.warn(`holidays.js: ${skipped} holiday(s) skipped (missing/invalid/past date) -- may need a yearly update`);
+  }
+  return valid;
+}
+
 // Presets (holidays) dialog
 document.getElementById("presetsBtn").addEventListener("click", () => {
   presetsList.innerHTML = "";
-  for (const h of HOLIDAY_PRESETS) {
+  const validPresets = getValidHolidayPresets();
+  presetsEmptyEl.hidden = validPresets.length > 0;
+  for (const h of validPresets) {
     const li = document.createElement("li");
     li.innerHTML = `<span>${h.emoji}</span><span class="p-name">${h.name}</span><span class="p-date">${formatHebrewDate(h.date)}</span>`;
     // No role="button" here (unlike Hero/Compact Row, which are plain

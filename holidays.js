@@ -1,6 +1,10 @@
 // Presets: Israeli & Jewish holidays / national days.
 // Dates verified via hebcal.com for the 5787 Hebrew year (Aug 2026–Dec 2027).
 // TODO: extend with future years or compute dynamically via a hebrew-calendar lib.
+// Contract (Story 1.6 / FR-5): an entry with a missing, malformed, or
+// already-past `date` is silently skipped from the picker, not an error --
+// see isValidHolidayDate()/getValidHolidayPresets() in app.js. Safe to
+// leave this file stale for a while; entries just quietly stop appearing.
 const HOLIDAY_PRESETS = [
   { name: "ראש השנה",        date: "2026-09-11", emoji: "🍎" },
   { name: "יום כיפור",        date: "2026-09-20", emoji: "🕊️" },
