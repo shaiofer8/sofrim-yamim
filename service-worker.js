@@ -1,4 +1,4 @@
-const CACHE_NAME = "sofrim-yamim-v9";
+const CACHE_NAME = "sofrim-yamim-v11";
 const ASSETS = [
   "/",
   "/index.html",

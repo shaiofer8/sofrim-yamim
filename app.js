@@ -10,7 +10,19 @@ const liveStatusEl = document.getElementById("liveStatus");
 // this is the only save confirmation screen-reader/reduced-motion users
 // get.
 function announce(text) {
-  liveStatusEl.textContent = text;
+  // Clear first: some screen readers don't re-announce aria-live text
+  // that's identical to what's already there (e.g. two saves in a row).
+  // The delay also lets a just-issued focus-change announcement (from
+  // celebrateNewEvent/focusEventRow, called right before this) finish
+  // first, instead of the two competing.
+  liveStatusEl.textContent = "";
+  setTimeout(() => { liveStatusEl.textContent = text; }, 150);
+}
+
+// Story 1.5: focus restoration after render() rebuilds the list DOM.
+function focusEventRow(id) {
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (el) el.focus();
 }
 
 const dialog = document.getElementById("eventDialog");
@@ -161,22 +173,28 @@ function render() {
   }
 }
 
-// Story 1.4: bounce + confetti on a newly-saved event only (not edits) --
-// skipped entirely under prefers-reduced-motion, per epic-1-context: the
-// result must just show immediately with no special-cased fallback markup.
+// Story 1.4/1.5: bring a newly-saved event into view and focus it (always
+// -- this is focus restoration after render() rebuilt the DOM, same as
+// the edit/delete paths, not an animation), then play the bounce+confetti
+// celebration on top -- that part alone is skipped under
+// prefers-reduced-motion, per epic-1-context: the result must just show
+// immediately with no special-cased fallback markup.
 function celebrateNewEvent(id) {
-  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    return;
-  }
   const el = document.querySelector(`[data-id="${id}"]`);
   if (!el) {
     console.warn("celebrateNewEvent: no card found for id", id);
     return;
   }
 
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   // Sorted soonest-first, a new event with a far-future date can land
-  // below the fold -- bring it into view so the celebration is seen.
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  // below the fold -- bring it into view and focus it so a keyboard user
+  // doesn't lose their place, regardless of motion preference.
+  el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  el.focus();
+
+  if (reduceMotion) return;
 
   el.classList.add("just-saved");
   const clearBounce = () => el.classList.remove("just-saved");
@@ -247,6 +265,7 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
   }
   const events = loadEvents();
   let newEventId = null;
+  const editedId = editingId;
   if (editingId) {
     const idx = events.findIndex((ev) => ev.id === editingId);
     if (idx !== -1) {
@@ -264,8 +283,15 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
   saveEvents(events);
   dialog.close();
   render();
+  if (newEventId) {
+    celebrateNewEvent(newEventId);
+  } else if (editedId) {
+    // Story 1.5: render() rebuilt the whole list, dropping focus to
+    // <body> -- a keyboard user who opened this row via Enter shouldn't
+    // lose their place after saving an edit.
+    focusEventRow(editedId);
+  }
   announce("האירוע נשמר.");
-  if (newEventId) celebrateNewEvent(newEventId);
 });
 
 deleteBtn.addEventListener("click", () => {
@@ -274,6 +300,10 @@ deleteBtn.addEventListener("click", () => {
   saveEvents(events);
   dialog.close();
   render();
+  // The deleted row no longer exists to refocus -- land on a stable,
+  // always-present anchor instead of dropping focus to <body>.
+  document.getElementById("addBtn").focus();
+  announce("האירוע נמחק.");
 });
 
 // Presets (holidays) dialog
@@ -282,15 +312,29 @@ document.getElementById("presetsBtn").addEventListener("click", () => {
   for (const h of HOLIDAY_PRESETS) {
     const li = document.createElement("li");
     li.innerHTML = `<span>${h.emoji}</span><span class="p-name">${h.name}</span><span class="p-date">${formatHebrewDate(h.date)}</span>`;
-    li.addEventListener("click", () => {
+    // No role="button" here (unlike Hero/Compact Row, which are plain
+    // divs with no prior semantics to lose): this is a real <li> in a
+    // <ul>, and keeping the implicit listitem role lets a screen reader
+    // announce position/count ("3 of 14") while still staying keyboard-
+    // operable via tabindex + the keydown handler below.
+    li.setAttribute("tabindex", "0");
+    li.setAttribute("aria-label", `${h.name}, ${formatHebrewDate(h.date)}`);
+    const addPreset = () => {
       const events = loadEvents();
       const id = crypto.randomUUID();
       events.push({ id, name: h.name, date: h.date, emoji: h.emoji });
       saveEvents(events);
       presetsDialog.close();
       render();
-      announce("האירוע נשמר.");
       celebrateNewEvent(id);
+      announce("האירוע נשמר.");
+    };
+    li.addEventListener("click", addPreset);
+    li.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        addPreset();
+      }
     });
     presetsList.appendChild(li);
   }

@@ -40,7 +40,7 @@
 </p>
 
 <!-- Add/Edit dialog -->
-<dialog id="eventDialog">
+<dialog id="eventDialog" aria-labelledby="dialogTitle">
   <form id="eventForm" method="dialog">
     <h2 id="dialogTitle">אירוע חדש</h2>
 
@@ -71,9 +71,9 @@
 </dialog>
 
 <!-- Presets dialog: Israeli/Jewish holidays -->
-<dialog id="presetsDialog">
+<dialog id="presetsDialog" aria-labelledby="presetsDialogTitle">
   <div class="presets-content">
-    <h2>הוספה מהירה — חגים ומועדים</h2>
+    <h2 id="presetsDialogTitle">הוספה מהירה — חגים ומועדים</h2>
     <p class="presets-hint">בחרו אירוע כדי להוסיף אותו לרשימה שלכם</p>
     <ul id="presetsList" class="presets-list"></ul>
     <div class="dialog-actions">
