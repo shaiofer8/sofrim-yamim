@@ -3,6 +3,15 @@ const STORAGE_KEY = "sofrim-yamim.events.v1";
 const listEl = document.getElementById("eventList");
 const emptyEl = document.getElementById("emptyState");
 const heroEl = document.getElementById("heroCard");
+const liveStatusEl = document.getElementById("liveStatus");
+
+// Non-visual success confirmation: the bounce+confetti celebration is
+// entirely visual and is itself skipped under prefers-reduced-motion, so
+// this is the only save confirmation screen-reader/reduced-motion users
+// get.
+function announce(text) {
+  liveStatusEl.textContent = text;
+}
 
 const dialog = document.getElementById("eventDialog");
 const form = document.getElementById("eventForm");
@@ -66,6 +75,7 @@ function renderHero(ev) {
     heroEl.onclick = null;
     heroEl.onkeydown = null;
     heroEl.removeAttribute("aria-label");
+    delete heroEl.dataset.id;
     return;
   }
 
@@ -84,6 +94,7 @@ function renderHero(ev) {
       <span class="label">${label}</span>
     </div>
   `;
+  heroEl.dataset.id = ev.id;
   heroEl.setAttribute("role", "button");
   heroEl.setAttribute("tabindex", "0");
   heroEl.setAttribute("aria-label", `אירוע קרוב ביותר: ${ev.name}, ${ariaCountText(num, label)}`);
@@ -121,6 +132,7 @@ function render() {
 
     const card = document.createElement("div");
     card.className = "event-card" + (diff < 0 ? " past" : "");
+    card.dataset.id = ev.id;
     card.innerHTML = `
       <div class="event-emoji">${ev.emoji}</div>
       <div class="event-info">
@@ -146,6 +158,56 @@ function render() {
       }
     });
     listEl.appendChild(card);
+  }
+}
+
+// Story 1.4: bounce + confetti on a newly-saved event only (not edits) --
+// skipped entirely under prefers-reduced-motion, per epic-1-context: the
+// result must just show immediately with no special-cased fallback markup.
+function celebrateNewEvent(id) {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (!el) {
+    console.warn("celebrateNewEvent: no card found for id", id);
+    return;
+  }
+
+  // Sorted soonest-first, a new event with a far-future date can land
+  // below the fold -- bring it into view so the celebration is seen.
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  el.classList.add("just-saved");
+  const clearBounce = () => el.classList.remove("just-saved");
+  el.addEventListener("animationend", clearBounce, { once: true });
+  setTimeout(clearBounce, 500); // fallback: guarantees cleanup even if animationend never fires
+
+  spawnConfetti(el);
+}
+
+function spawnConfetti(anchorEl) {
+  const rect = anchorEl.getBoundingClientRect();
+  const originX = rect.left + rect.width / 2;
+  const originY = rect.top + rect.height / 2;
+  // text-primary (not a hardcoded #fff) so the third color stays visible
+  // against the light-mode background too (Story 1.9).
+  const colors = ["var(--accent-violet)", "var(--accent-pink)", "var(--text-primary)"];
+
+  for (let i = 0; i < 10; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 36 + Math.random() * 36;
+    const piece = document.createElement("span");
+    piece.className = "confetti-piece";
+    piece.style.left = `${originX}px`;
+    piece.style.top = `${originY}px`;
+    piece.style.background = colors[i % colors.length];
+    piece.style.setProperty("--dx", `${Math.cos(angle) * distance}px`);
+    piece.style.setProperty("--dy", `${Math.sin(angle) * distance}px`);
+    document.body.appendChild(piece);
+    const removePiece = () => piece.remove();
+    piece.addEventListener("animationend", removePiece, { once: true });
+    setTimeout(removePiece, 800); // fallback: guarantees cleanup even if animationend never fires
   }
 }
 
@@ -184,14 +246,16 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
     return;
   }
   const events = loadEvents();
+  let newEventId = null;
   if (editingId) {
     const idx = events.findIndex((ev) => ev.id === editingId);
     if (idx !== -1) {
       events[idx] = { ...events[idx], name: nameInput.value.trim(), date: dateInput.value, emoji: emojiInput.value };
     }
   } else {
+    newEventId = crypto.randomUUID();
     events.push({
-      id: crypto.randomUUID(),
+      id: newEventId,
       name: nameInput.value.trim(),
       date: dateInput.value,
       emoji: emojiInput.value,
@@ -200,6 +264,8 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
   saveEvents(events);
   dialog.close();
   render();
+  announce("האירוע נשמר.");
+  if (newEventId) celebrateNewEvent(newEventId);
 });
 
 deleteBtn.addEventListener("click", () => {
@@ -218,10 +284,13 @@ document.getElementById("presetsBtn").addEventListener("click", () => {
     li.innerHTML = `<span>${h.emoji}</span><span class="p-name">${h.name}</span><span class="p-date">${formatHebrewDate(h.date)}</span>`;
     li.addEventListener("click", () => {
       const events = loadEvents();
-      events.push({ id: crypto.randomUUID(), name: h.name, date: h.date, emoji: h.emoji });
+      const id = crypto.randomUUID();
+      events.push({ id, name: h.name, date: h.date, emoji: h.emoji });
       saveEvents(events);
       presetsDialog.close();
       render();
+      announce("האירוע נשמר.");
+      celebrateNewEvent(id);
     });
     presetsList.appendChild(li);
   }
