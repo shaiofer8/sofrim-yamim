@@ -37,6 +37,11 @@ const presetsDialog = document.getElementById("presetsDialog");
 const presetsList = document.getElementById("presetsList");
 const presetsEmptyEl = document.getElementById("presetsEmpty");
 
+const deleteConfirmDialog = document.getElementById("deleteConfirmDialog");
+const deleteConfirmText = document.getElementById("deleteConfirmText");
+const deleteConfirmCancelBtn = document.getElementById("deleteConfirmCancelBtn");
+const deleteConfirmOkBtn = document.getElementById("deleteConfirmOkBtn");
+
 let editingId = null;
 
 function loadEvents() {
@@ -163,15 +168,127 @@ function render() {
     // also speak the date: with several rows in a list, the relative day
     // count alone isn't enough to tell them apart by ear.
     card.setAttribute("aria-label", `${ev.name}, ${formatHebrewDate(ev.date)}, ${ariaCountText(num, label)}`);
-    card.addEventListener("click", () => openEditDialog(ev));
     card.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         openEditDialog(ev);
       }
     });
+    attachSwipeToDelete(card, ev);
     listEl.appendChild(card);
   }
+}
+
+// Story 1.7: swipe-to-delete on Compact Row only (never attached to
+// heroEl -- prevents accidentally deleting the most-important event).
+// Direction-agnostic (either horizontal direction arms it) rather than
+// RTL-direction-specific, since there's no existing swipe convention
+// elsewhere in this app to match and this keeps the gesture logic simple.
+// A confirmation <dialog> always gates the actual delete (AD-7: every
+// secondary surface is a native <dialog>, not a custom sheet component) --
+// there is no direct-delete-on-swipe path.
+const SWIPE_THRESHOLD_PX = 70;
+const SWIPE_MAX_DRAG_PX = 140; // clamp: keep a fast/long drag from widening the page's scrollable area
+
+function attachSwipeToDelete(card, ev) {
+  let activePointerId = null; // ignore a 2nd touch landing on this row mid-drag
+  let startX = 0;
+  let startY = 0;
+  let dx = 0;
+  let horizontalCommitted = false;
+  let wasSwipeGesture = false;
+
+  function reset() {
+    activePointerId = null;
+    horizontalCommitted = false;
+    card.classList.remove("swiping", "swipe-armed");
+    card.style.transform = "";
+  }
+
+  card.addEventListener("pointerdown", (e) => {
+    if (activePointerId !== null) return; // a gesture is already in progress
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    activePointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+    dx = 0;
+    horizontalCommitted = false;
+  });
+
+  card.addEventListener("pointermove", (e) => {
+    if (e.pointerId !== activePointerId) return;
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+
+    if (!horizontalCommitted) {
+      if (Math.abs(deltaY) > 10 && Math.abs(deltaY) >= Math.abs(deltaX)) {
+        // Vertical intent -- this is a page scroll, not a swipe. Bail out
+        // and let native scrolling proceed untouched.
+        reset();
+        return;
+      }
+      if (Math.abs(deltaX) <= 10) return; // not enough movement yet either way
+      horizontalCommitted = true;
+      card.classList.add("swiping");
+      try {
+        card.setPointerCapture(e.pointerId);
+      } catch {
+        // Invalid/expired pointer id -- rare, harmless to skip; the drag
+        // still works, it just won't keep tracking past the card's edges.
+      }
+    }
+
+    dx = Math.max(-SWIPE_MAX_DRAG_PX, Math.min(SWIPE_MAX_DRAG_PX, deltaX));
+    card.style.transform = `translateX(${dx}px)`;
+    card.classList.toggle("swipe-armed", Math.abs(dx) >= SWIPE_THRESHOLD_PX);
+  });
+
+  function endSwipe(e, cancelled) {
+    if (e.pointerId !== activePointerId) return;
+    const committed = horizontalCommitted;
+    const finalDx = dx;
+    if (committed && card.hasPointerCapture?.(e.pointerId)) {
+      card.releasePointerCapture(e.pointerId);
+    }
+    reset();
+    // A cancelled gesture (platform took over -- e.g. recognized it as a
+    // scroll) must never open the confirmation dialog, regardless of how
+    // far it had already dragged.
+    if (committed && !cancelled && Math.abs(finalDx) >= SWIPE_THRESHOLD_PX) {
+      wasSwipeGesture = true;
+      // Self-clearing fallback: the flag is normally consumed by the
+      // trailing click the browser fires right after this (see the click
+      // handler below), but if that click is ever suppressed/never
+      // arrives (platform-dependent), this guarantees the row isn't left
+      // permanently un-tappable.
+      setTimeout(() => { wasSwipeGesture = false; }, 400);
+      openDeleteConfirm(ev);
+    }
+  }
+
+  card.addEventListener("pointerup", (e) => endSwipe(e, false));
+  card.addEventListener("pointercancel", (e) => endSwipe(e, true));
+
+  card.addEventListener("click", (e) => {
+    if (wasSwipeGesture) {
+      // Suppress the synthetic click a browser fires after a drag release
+      // -- a completed swipe should open the confirm sheet, not the edit
+      // dialog underneath it.
+      wasSwipeGesture = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    openEditDialog(ev);
+  });
+}
+
+let pendingDeleteId = null;
+
+function openDeleteConfirm(ev) {
+  pendingDeleteId = ev.id;
+  deleteConfirmText.textContent = `למחוק את "${ev.name}"?`;
+  deleteConfirmDialog.showModal();
 }
 
 // Story 1.4/1.5: bring a newly-saved event into view and focus it (always
@@ -295,14 +412,41 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
   announce("האירוע נשמר.");
 });
 
+// Story 1.7: deleteBtn (inside the edit dialog) now routes through the
+// same confirmation sheet as swipe-to-delete, instead of deleting
+// immediately -- two delete paths with inverted safety guarantees (the
+// easier-to-trigger-by-accident gesture requiring confirmation, but the
+// deliberate button click not) would be a confusing, inconsistent
+// mental model for a single "delete an event" action.
 deleteBtn.addEventListener("click", () => {
   if (!editingId) return;
-  const events = loadEvents().filter((ev) => ev.id !== editingId);
-  saveEvents(events);
+  const name = nameInput.value.trim() || "האירוע";
+  const id = editingId;
   dialog.close();
+  openDeleteConfirm({ id, name });
+});
+
+// Reset on the dialog's own `close` event (fires for every close path --
+// Cancel, Escape, or the programmatic .close() below) instead of only in
+// the Cancel button's click handler, so Escape can't leave a stale id
+// behind.
+deleteConfirmDialog.addEventListener("close", () => {
+  pendingDeleteId = null;
+});
+
+deleteConfirmCancelBtn.addEventListener("click", () => {
+  deleteConfirmDialog.close();
+});
+
+deleteConfirmOkBtn.addEventListener("click", () => {
+  if (!pendingDeleteId) {
+    deleteConfirmDialog.close();
+    return;
+  }
+  const events = loadEvents().filter((ev) => ev.id !== pendingDeleteId);
+  saveEvents(events);
+  deleteConfirmDialog.close(); // triggers the `close` listener above, clearing pendingDeleteId
   render();
-  // The deleted row no longer exists to refocus -- land on a stable,
-  // always-present anchor instead of dropping focus to <body>.
   document.getElementById("addBtn").focus();
   announce("האירוע נמחק.");
 });

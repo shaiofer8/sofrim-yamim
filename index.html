@@ -83,6 +83,18 @@
   </div>
 </dialog>
 
+<!-- Swipe-to-delete confirmation sheet (Story 1.7) -->
+<dialog id="deleteConfirmDialog" aria-labelledby="deleteConfirmTitle">
+  <div class="presets-content">
+    <h2 id="deleteConfirmTitle">מחיקת אירוע</h2>
+    <p id="deleteConfirmText" class="presets-hint"></p>
+    <div class="dialog-actions">
+      <button type="button" id="deleteConfirmCancelBtn" class="btn-secondary">ביטול</button>
+      <button type="button" id="deleteConfirmOkBtn" class="btn-danger">מחיקה</button>
+    </div>
+  </div>
+</dialog>
+
 <script src="holidays.js"></script>
 <script src="app.js"></script>
 </body>
