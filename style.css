@@ -11,6 +11,13 @@
   --text-disabled: #8a84a8;
   --danger: #ff5f5f;
 
+  /* Count-number gradient text (Hero Card + Compact Row): defaults to the
+     brand gradient in dark mode. Overridden to deeper, contrast-safe
+     values in light mode below, since the brand gradient itself doesn't
+     hold WCAG contrast as *text* against a light page background. */
+  --count-grad-1: var(--accent-violet);
+  --count-grad-2: var(--accent-pink);
+
   /* DESIGN.md rounded scale */
   --radius-sm: 10px;
   --radius-md: 16px;
@@ -25,7 +32,26 @@
   --space-6: 28px;
   --space-7: 40px;
 
-  color-scheme: dark;
+  color-scheme: light dark;
+}
+
+/* Story 1.9: light mode, follows OS/browser preference. Brand gradient
+   (accent-violet/accent-pink) is unchanged — it's only ever used as a
+   background fill behind forced-white text (header, FAB, primary button),
+   never as text color, so it doesn't need a contrast-driven variant. */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-base: #f3f0fa;
+    --bg-elev: #ffffff;
+    --surface-glass: rgba(255, 255, 255, 0.65);
+    --surface-glass-border: rgba(36, 26, 61, 0.1);
+    --text-primary: #241a3d;
+    --text-secondary: #4f4470;
+    --text-disabled: #6b6088;
+    --danger: #c8102e;
+    --count-grad-1: #6a3ff0;
+    --count-grad-2: #c91f66;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -153,7 +179,7 @@ body {
   font-size: 1.6rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+  background: linear-gradient(135deg, var(--count-grad-1), var(--count-grad-2));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
