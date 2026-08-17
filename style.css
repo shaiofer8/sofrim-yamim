@@ -475,6 +475,89 @@ button {
   font-size: 0.8rem;
 }
 
+/* Story 2.3: Settings Row -- label at the reading-start side (right in
+   RTL, via source order: label markup comes first), switch at the end
+   (left), matching the same source-order convention as .app-header. */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  min-height: 48px;
+}
+
+.settings-row-label {
+  /* Overrides the generic label rule's size (0.85rem->1rem), color
+     (--text-secondary->--text-primary), and margin-top (->0) -- this is
+     a Settings Row's own label, not a form-field label. */
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.settings-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 46px;
+  height: 26px;
+  min-width: 46px; /* keep the switch from being squeezed by flexbox */
+  border-radius: 999px;
+  /* A fixed neutral fill, not --surface-glass-border (a subtle *border*
+     token, too faint to double as a track fill -- was nearly invisible
+     against the light-mode dialog background). */
+  background: rgba(128, 128, 128, 0.4);
+  border: 1px solid var(--surface-glass-border);
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+  transition: background 0.15s ease;
+}
+
+.settings-toggle::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  /* Logical inset (not `right` + `transform: translateX`) animates
+     directly and stays correct if the app ever supports LTR -- matches
+     the `margin-inline-end` convention already used elsewhere. */
+  inset-inline-end: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: inset-inline-end 0.15s ease;
+}
+
+.settings-toggle:checked {
+  background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+  border-color: transparent;
+}
+
+.settings-toggle:checked::before {
+  inset-inline-end: 22px; /* 46px track - 2px inset - 20px thumb - 2px inset */
+}
+
+.settings-toggle:focus-visible {
+  outline: 2px solid var(--accent-pink);
+  outline-offset: 2px;
+}
+
+.settings-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-toggle,
+  .settings-toggle::before {
+    transition: none;
+  }
+}
+
 /* Story 1.4: micro-interaction on a newly-saved event only (app.js decides
    *when* to add/skip this -- prefers-reduced-motion is checked there so
    the animation never even starts; these rules are the reduced-motion

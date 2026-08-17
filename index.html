@@ -24,6 +24,7 @@
 <header class="app-header">
   <h1>🗓️ סופרים ימים</h1>
   <div class="header-actions">
+    <button id="settingsBtn" class="btn-icon" aria-label="הגדרות">⚙️</button>
     <button id="presetsBtn" class="btn-icon" aria-label="חגים ומועדים">✡️</button>
     <button id="addBtn" class="fab" aria-label="הוספת אירוע">+</button>
   </div>
@@ -79,6 +80,21 @@
     <p id="presetsEmpty" class="presets-hint" hidden>רשימת החגים לא מעודכנת כרגע. תוכלו להוסיף אירוע ידנית.</p>
     <div class="dialog-actions">
       <button type="button" id="closePresetsBtn" class="btn-secondary">סגירה</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Settings dialog (Story 2.3) -->
+<dialog id="settingsDialog" aria-labelledby="settingsDialogTitle">
+  <div class="presets-content">
+    <h2 id="settingsDialogTitle">הגדרות</h2>
+    <div class="settings-row">
+      <label for="notifToggle" class="settings-row-label">התראות</label>
+      <input type="checkbox" id="notifToggle" class="settings-toggle" role="switch">
+    </div>
+    <p id="notifDeniedHint" class="presets-hint" hidden></p>
+    <div class="dialog-actions">
+      <button type="button" id="closeSettingsBtn" class="btn-secondary">סגירה</button>
     </div>
   </div>
 </dialog>

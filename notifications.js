@@ -129,3 +129,68 @@ function maybeRequestNotificationPermission() {
 }
 
 document.addEventListener("sofrim-yamim:event-added", maybeRequestNotificationPermission);
+
+// Story 2.3: Settings Row that *reflects* the current notification
+// permission state -- Story 2.2 above is the primary request point, this
+// is a secondary fix-it path. app.js owns the dialog's open/close chrome
+// (see its "sofrim-yamim:settings-opened" dispatch) -- this file only
+// owns what's actually notification-specific: the toggle and its hint.
+const notifToggle = document.getElementById("notifToggle");
+const notifHint = document.getElementById("notifDeniedHint");
+
+function refreshSettingsDialog() {
+  const supported = "Notification" in window;
+  const permission = supported ? Notification.permission : null;
+  notifToggle.checked = permission === "granted";
+  notifToggle.disabled = !supported;
+
+  // A hint for every state the toggle can't fully self-explain -- "default"
+  // is the only one where the switch alone is enough (click it, get a
+  // real prompt). The other three all need a sentence, not just silence.
+  if (!supported) {
+    notifHint.hidden = false;
+    notifHint.textContent = "התראות אינן נתמכות בדפדפן הזה.";
+  } else if (permission === "denied") {
+    notifHint.hidden = false;
+    notifHint.textContent = "יש לאשר התראות בהגדרות הדפדפן או המכשיר.";
+  } else if (permission === "granted") {
+    notifHint.hidden = false;
+    notifHint.textContent = "התראות מאושרות. ניתן לשנות זאת בהגדרות הדפדפן או המכשיר.";
+  } else {
+    notifHint.hidden = true;
+  }
+}
+
+document.addEventListener("sofrim-yamim:settings-opened", refreshSettingsDialog);
+
+notifToggle.addEventListener("change", () => {
+  if (!("Notification" in window)) {
+    refreshSettingsDialog();
+    return;
+  }
+  if (Notification.permission === "granted") {
+    // No API can programmatically revoke a granted permission -- reflect
+    // reality rather than show a state the app can't actually deliver.
+    notifToggle.checked = true;
+    return;
+  }
+  // permission is "default" or "denied". If "default", this shows a real
+  // system prompt (the "second chance" this story exists for) and, on
+  // grant, announces it the same way every other state-changing action in
+  // this app does. If already "denied", browsers intentionally resolve
+  // this immediately with no prompt at all (standard anti-spam behavior,
+  // not a bug) -- refreshSettingsDialog() below then correctly snaps the
+  // toggle back off; the hint was already visible before the click.
+  try {
+    Notification.requestPermission()
+      .catch(() => "denied")
+      .then((result) => {
+        refreshSettingsDialog();
+        if (result === "granted" && typeof announce === "function") {
+          announce("התראות אושרו.");
+        }
+      });
+  } catch {
+    refreshSettingsDialog();
+  }
+});

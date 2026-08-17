@@ -540,6 +540,29 @@ document.getElementById("presetsBtn").addEventListener("click", () => {
 });
 document.getElementById("closePresetsBtn").addEventListener("click", () => presetsDialog.close());
 
+// Story 2.3: app.js owns all dialog open/close chrome (matches
+// eventDialog/presetsDialog/deleteConfirmDialog above) -- notifications.js
+// only owns what's actually notification-specific (the toggle + hint
+// text), refreshed via this event so app.js never has to call anything
+// in that file by name. Story 3.2 (billing.js, not yet built) is
+// expected to add a purchase button into this same dialog later; keeping
+// the shared chrome here avoids a second, competing owner for it.
+const settingsDialogEl = document.getElementById("settingsDialog");
+const closeSettingsBtnEl = document.getElementById("closeSettingsBtn");
+
+document.getElementById("settingsBtn").addEventListener("click", () => {
+  document.dispatchEvent(new CustomEvent("sofrim-yamim:settings-opened"));
+  settingsDialogEl.showModal();
+  // Native <dialog> autofocuses the first focusable descendant by default,
+  // which would otherwise land on the notification toggle itself -- an
+  // accidental Enter/Space right after opening would fire a real
+  // permission request as a side effect of just opening the dialog.
+  // Land on the safe "close" action instead (same reasoning as
+  // deleteConfirmDialog's button ordering).
+  closeSettingsBtnEl.focus();
+});
+closeSettingsBtnEl.addEventListener("click", () => settingsDialogEl.close());
+
 render();
 
 // PWA: register service worker
