@@ -138,6 +138,14 @@ body {
   transition: transform 0.15s ease;
 }
 
+.hero-card[hidden] {
+  /* [hidden] and .hero-card have equal CSS specificity, and this
+     author-stylesheet rule for the latter would otherwise win over the
+     UA default (display: none) -- state it explicitly so hiding actually
+     hides. */
+  display: none;
+}
+
 .hero-card:active { transform: scale(0.98); }
 
 .hero-card:focus-visible {

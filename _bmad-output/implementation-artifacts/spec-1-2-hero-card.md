@@ -49,7 +49,7 @@ context: []
 - `app.js:43` (`countLabel`) -- לשימוש חוזר ללא שינוי עבור מספר הספירה ב-Hero
 - `index.html:29` -- להוסיף `<div id="heroCard" class="hero-card" hidden></div>` מעל `<main id="eventList">`
 - `style.css:101` -- הערת ה-backdrop-filter הקיימת ב-`.event-card` מפנה במפורש ל-Story 1.2 עבור ה-Hero; להוסיף כלל `.hero-card` חדש (glass מוגבר + halo), לא לגעת ב-`.event-card`
-- `service-worker.js:1` -- `CACHE_NAME` הוגדל (v3→v4) בעקבות שינוי לנכסים cached (AD-8)
+- `service-worker.js:1` -- `CACHE_NAME` הוגדל בשני צעדים, v3→v4 ואז v4→v5 (תיקון ה-hidden שנתפס באימות) בעקבות שינויים לנכסים cached (AD-8)
 
 ## Tasks & Acceptance
 
@@ -57,7 +57,7 @@ context: []
 - [x] `index.html` -- הוספת `<div id="heroCard" class="hero-card" hidden>` מעל ה-`<main>` -- מיכל ה-Hero Card
 - [x] `app.js` -- לוגיקת חילוץ אירוע Hero מתוך המערך הממוין הקיים, רינדור תוכן + attributes נגישות (`role`, `tabindex`, `aria-label`), מאזיני קליק ו-Enter/Space שקוראים ל-`openEditDialog` -- UX-DR3, Story 1.2 AC
 - [x] `style.css` -- כלל `.hero-card` (glass מוגבר, `backdrop-filter`, `radius-lg`, הילת-גרדיאנט עדינה, רוחב מלא, מספר-ספירה `clamp` בין 56-72px ב-rem, `min-height` 48px) -- UX-DR3, DESIGN.md
-- [x] `service-worker.js` -- הגדלת `CACHE_NAME` ל-v4 -- AD-8, נכסים cached השתנו
+- [x] `service-worker.js` -- הגדלת `CACHE_NAME` ל-v5 -- AD-8, נכסים cached השתנו
 
 **Acceptance Criteria:**
 - Given לפחות אירוע עתידי אחד ברשימה, when המסך הראשי נטען, then האירוע עם `daysUntil` הקטן ביותר מוצג ב-Hero Card נפרד ובולט מעל שאר הרשימה, עם מספר-ספירה בגודל 56-72px (ב-rem)
@@ -69,9 +69,16 @@ context: []
 
 הילת-גרדיאנט: `box-shadow` עדין בגוון `accent-violet`/`accent-pink` בשקיפות נמוכה (למשל `0 0 40px rgba(124,92,255,0.25)`) — לא צל כהה/כבד, זה "glow" לא "shadow". ה-`backdrop-filter` על ה-Hero חזק יותר מזה של ה-`dialog` (16px) כדי להדגיש את ההיררכיה הוויזואלית.
 
+**באג שנתפס באימות חזותי (Playwright, לא ידני):** `.hero-card { display: flex }` ו-`[hidden]` הם באותה רמת specificity ב-CSS; מכיוון שהכלל של המחלקה מופיע בגיליון-הסגנון של המחבר, הוא ניצח את ברירת המחדל של הדפדפן `[hidden]{display:none}` — כלומר `heroEl.hidden = true` לא הסתיר בפועל את הכרטיס (נשאר תיבת-זכוכית ריקה). תוקן עם כלל מפורש `.hero-card[hidden] { display: none; }`.
+
 ## Verification
 
+**בוצע בפועל (Playwright headless, לא רק הצעה ידנית):** שרת סטטי מקומי + סקריפט Playwright שהזריק אירועים ל-`localStorage` וצילם מסך בכל אחד מ-5 המצבים (אירוע עתידי יחיד+נוספים, "היום", רק-עבר, ריק, מצב בהיר). תוצאות:
+- כל 5 המצבים נראים נכון חזותית (Hero Card מופיע/נעלם כצפוי, גרדיאנט/glass/halo תקינים בשני מצבי הבהירות)
+- `aria-label` בפועל: `"אירוע קרוב ביותר: ראש השנה, 3 ימים"` — תואם את הספק
+- Enter על Hero Card ב-focus פתח את דיאלוג העריכה בהצלחה
+- 0 שגיאות קונסולה בכל המצבים
+- **נתפס ותוקן באימות עצמו:** הבאג שתועד ב-Design Notes (`[hidden]` לא עבד בפועל) — לא היה נתפס בסקירת קוד סטטית בלבד
+
 **Manual checks (if no CLI):**
-- לפתוח את `index.html` בדפדפן עם: (א) אירוע עתידי יחיד, (ב) כמה אירועים כשה-nearest הוא "היום", (ג) רק אירועי עבר, (ד) רשימה ריקה — ולוודא חזותית שה-Hero Card מופיע/נעלם בהתאם
-- DevTools → Accessibility tree: לוודא ש-Hero Card חשוף כ-button עם השם הנגיש הנכון
-- בדיקת מקלדת: Tab ל-Hero Card, Enter/Space פותחים את דיאלוג העריכה
+- DevTools → Accessibility tree: לוודא ש-Hero Card חשוף כ-button עם השם הנגיש הנכון (אומת פרוגרמטית לעיל, כדאי גם עיון חזותי בעץ עצמו)
