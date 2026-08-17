@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>סופרים ימים</title>
+<meta name="description" content="ספירה לאחור לאירועים, חגים ומועדים — בעברית מלאה">
+<meta name="theme-color" content="#1b1035">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="favicon.png" type="image/png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="סופרים ימים">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>🗓️ סופרים ימים</h1>
+  <div class="header-actions">
+    <button id="presetsBtn" class="btn-icon" aria-label="חגים ומועדים">✡️</button>
+    <button id="addBtn" class="fab" aria-label="הוסף אירוע">+</button>
+  </div>
+</header>
+
+<main id="eventList" class="event-list">
+  <!-- events render here -->
+</main>
+
+<p id="emptyState" class="empty-state" hidden>
+  אין עדיין אירועים.<br>לחצו על + כדי להוסיף ספירה לאחור ראשונה 🎉
+</p>
+
+<!-- Add/Edit dialog -->
+<dialog id="eventDialog">
+  <form id="eventForm" method="dialog">
+    <h2 id="dialogTitle">אירוע חדש</h2>
+
+    <label for="eventName">שם האירוע</label>
+    <input id="eventName" type="text" required placeholder="לדוגמה: יום הולדת לאמא">
+
+    <label for="eventDate">תאריך</label>
+    <input id="eventDate" type="date" required>
+
+    <label for="eventEmoji">אייקון</label>
+    <select id="eventEmoji">
+      <option value="🎉">🎉 חגיגה</option>
+      <option value="🎂">🎂 יום הולדת</option>
+      <option value="💍">💍 חתונה</option>
+      <option value="✈️">✈️ טיול</option>
+      <option value="🕎">🕎 חג</option>
+      <option value="🎓">🎓 סיום לימודים</option>
+      <option value="💼">💼 עבודה / יעד</option>
+      <option value="⭐">⭐ אחר</option>
+    </select>
+
+    <div class="dialog-actions">
+      <button type="button" id="cancelBtn" class="btn-secondary">ביטול</button>
+      <button type="button" id="deleteBtn" class="btn-danger" hidden>מחיקה</button>
+      <button type="submit" id="saveBtn" class="btn-primary">שמירה</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Presets dialog: Israeli/Jewish holidays -->
+<dialog id="presetsDialog">
+  <div class="presets-content">
+    <h2>הוספה מהירה — חגים ומועדים</h2>
+    <p class="presets-hint">בחרו אירוע כדי להוסיף אותו לרשימה שלכם</p>
+    <ul id="presetsList" class="presets-list"></ul>
+    <div class="dialog-actions">
+      <button type="button" id="closePresetsBtn" class="btn-secondary">סגירה</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="holidays.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

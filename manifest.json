@@ -1,0 +1,20 @@
+{
+  "name": "סופרים ימים",
+  "short_name": "סופרים ימים",
+  "description": "ספירה לאחור לאירועים, חגים ומועדים — בעברית מלאה",
+  "start_url": "/?source=pwa",
+  "id": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#150c2e",
+  "theme_color": "#1b1035",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
