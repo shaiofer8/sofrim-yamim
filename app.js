@@ -2,6 +2,7 @@ const STORAGE_KEY = "sofrim-yamim.events.v1";
 
 const listEl = document.getElementById("eventList");
 const emptyEl = document.getElementById("emptyState");
+const heroEl = document.getElementById("heroCard");
 
 const dialog = document.getElementById("eventDialog");
 const form = document.getElementById("eventForm");
@@ -48,6 +49,49 @@ function countLabel(diff) {
   return { num: Math.abs(diff), label: "ימים עברו" };
 }
 
+function heroDaysLabel(diff) {
+  if (diff === 0) return "היום";
+  if (diff === 1) return "מחר";
+  return `${diff} ימים`;
+}
+
+function renderHero(ev) {
+  if (!ev) {
+    heroEl.hidden = true;
+    heroEl.innerHTML = "";
+    heroEl.onclick = null;
+    heroEl.onkeydown = null;
+    heroEl.removeAttribute("aria-label");
+    return;
+  }
+
+  const diff = daysUntil(ev.date);
+  const { num, label } = countLabel(diff);
+
+  heroEl.hidden = false;
+  heroEl.innerHTML = `
+    <div class="hero-emoji">${ev.emoji}</div>
+    <div class="hero-info">
+      <div class="hero-name">${escapeHtml(ev.name)}</div>
+      <div class="hero-date">${formatHebrewDate(ev.date)}</div>
+    </div>
+    <div class="hero-count">
+      <span class="num">${num}</span>
+      <span class="label">${label}</span>
+    </div>
+  `;
+  heroEl.setAttribute("role", "button");
+  heroEl.setAttribute("tabindex", "0");
+  heroEl.setAttribute("aria-label", `אירוע קרוב ביותר: ${ev.name}, ${heroDaysLabel(diff)}`);
+  heroEl.onclick = () => openEditDialog(ev);
+  heroEl.onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openEditDialog(ev);
+    }
+  };
+}
+
 function render() {
   // Upcoming events first (soonest first), past events after (most recent first).
   const events = loadEvents().sort((a, b) => {
@@ -58,10 +102,16 @@ function render() {
     return rankA - rankB;
   });
 
-  listEl.innerHTML = "";
   emptyEl.hidden = events.length > 0;
 
-  for (const ev of events) {
+  // Hero Card: only ever the single nearest *future* (or today) event.
+  const heroEvent = events.length && daysUntil(events[0].date) >= 0 ? events[0] : null;
+  const restEvents = heroEvent ? events.slice(1) : events;
+  renderHero(heroEvent);
+
+  listEl.innerHTML = "";
+
+  for (const ev of restEvents) {
     const diff = daysUntil(ev.date);
     const { num, label } = countLabel(diff);
 
