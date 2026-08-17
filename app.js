@@ -25,6 +25,15 @@ function focusEventRow(id) {
   if (el) el.focus();
 }
 
+// Per the architecture spine: app.js owns storage and never depends on
+// notifications.js/billing.js directly (they load after it and hook in
+// as event listeners, not the reverse) -- so a new event is announced
+// via a plain DOM CustomEvent, not a direct/guarded function call.
+// app.js doesn't know or care whether anything is listening.
+function dispatchEventAdded(id) {
+  document.dispatchEvent(new CustomEvent("sofrim-yamim:event-added", { detail: { id } }));
+}
+
 const dialog = document.getElementById("eventDialog");
 const form = document.getElementById("eventForm");
 const dialogTitle = document.getElementById("dialogTitle");
@@ -411,6 +420,7 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
   render();
   if (newEventId) {
     celebrateNewEvent(newEventId);
+    dispatchEventAdded(newEventId); // Story 2.2 hooks in on this; only fires on a genuinely new event, never an edit
   } else if (editedId) {
     // Story 1.5: render() rebuilt the whole list, dropping focus to
     // <body> -- a keyboard user who opened this row via Enter shouldn't
@@ -514,6 +524,7 @@ document.getElementById("presetsBtn").addEventListener("click", () => {
       presetsDialog.close();
       render();
       celebrateNewEvent(id);
+      dispatchEventAdded(id); // Story 2.2 hooks in on this
       announce("האירוע נשמר.");
     };
     li.addEventListener("click", addPreset);

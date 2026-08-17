@@ -91,3 +91,41 @@ function syncIndexedDBSnapshot(events) {
 // snapshot indefinitely, since syncIndexedDBSnapshot() only otherwise
 // runs from inside saveEvents().
 syncIndexedDBSnapshot(loadEvents());
+
+// Story 2.2 / FR-6: request Notification permission exactly once, right
+// after the user's very first-ever new event save (manual add or a
+// holiday preset) -- never at onboarding, and never asked again
+// regardless of the outcome. Per the architecture spine, app.js doesn't
+// call this directly -- it dispatches a plain DOM CustomEvent on every
+// new-event save (never on edits) and doesn't know or care who's
+// listening; this file hooks in independently.
+const NOTIF_PROMPT_SHOWN_KEY = "sofrim-yamim.notif-prompt-shown.v1";
+
+function maybeRequestNotificationPermission() {
+  try {
+    if (localStorage.getItem(NOTIF_PROMPT_SHOWN_KEY)) return; // already attempted the request, ever -- FR-6: once only
+    if (!("Notification" in window)) return; // unsupported context (e.g. some in-app browsers)
+    if (Notification.permission !== "default") return; // already decided via some other path -- don't re-prompt
+    // Marked *before* requesting, so even if the call throws synchronously
+    // (some embedded/in-app browser contexts do, e.g. without a live user
+    // gesture) this still counts as "attempted" and is never retried
+    // automatically. Story 2.3's Settings toggle, when a user re-enables
+    // notifications after having denied them, calls
+    // Notification.requestPermission() directly itself -- this function
+    // is intentionally single-use and isn't the path for that.
+    localStorage.setItem(NOTIF_PROMPT_SHOWN_KEY, "1");
+    Notification.requestPermission().catch(() => {
+      // Denial isn't an error path here -- FR-6: must never block anything
+      // else in the app. Nothing to do; the permission state itself
+      // (Notification.permission) is what everything downstream checks.
+    });
+  } catch {
+    // Belt-and-suspenders: some environments throw synchronously instead
+    // of rejecting a promise (or expose a legacy callback-only signature
+    // with no Promise return at all, making the .catch() above itself
+    // throw a TypeError). Either way, this must never propagate out to
+    // the event dispatch in app.js and interrupt anything there.
+  }
+}
+
+document.addEventListener("sofrim-yamim:event-added", maybeRequestNotificationPermission);
