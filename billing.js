@@ -58,8 +58,6 @@ function refreshAdBanner() {
   }
 }
 
-refreshAdBanner();
-
 // Story 3.2 / AD-4: one-time "remove ads" purchase. ONLY Payment Request
 // API + getDigitalGoodsService('https://play.google.com/billing') --
 // never a native SDK, never an independent payment server (AD-3: no
@@ -91,9 +89,22 @@ const purchaseBtnLabel = purchaseBtn?.querySelector(".purchase-btn-label");
 const purchaseSpinner = purchaseBtn?.querySelector(".purchase-spinner");
 const purchaseErrorEl = document.getElementById("purchaseError");
 
-function digitalGoodsAvailable() {
-  return "getDigitalGoodsService" in window && "PaymentRequest" in window;
+// The purchase flow needs both APIs; the restore check (below) only ever
+// calls listPurchases() -- gating it on PaymentRequest too would risk
+// skipping a valid restore in a hypothetical environment that exposes
+// Digital Goods without also exposing Payment Request.
+function digitalGoodsServiceAvailable() {
+  return "getDigitalGoodsService" in window;
 }
+
+function digitalGoodsAvailable() {
+  return digitalGoodsServiceAvailable() && "PaymentRequest" in window;
+}
+
+// Set for the duration of an actual purchase attempt (native payment
+// sheet potentially open) so a concurrently-resolving restorePurchases()
+// (below) never clobbers the "pending" button UI underneath it.
+let purchaseInProgress = false;
 
 function setPurchaseButtonState(state) {
   // "idle" | "pending" | "done"
@@ -110,6 +121,7 @@ function setPurchaseButtonState(state) {
 async function purchaseRemoveAds() {
   if (!digitalGoodsAvailable() || !purchaseBtn) return;
 
+  purchaseInProgress = true;
   purchaseErrorEl.hidden = true;
   setPurchaseButtonState("pending");
 
@@ -174,12 +186,14 @@ async function purchaseRemoveAds() {
     // which has no equivalent native semantic to lean on).
     purchaseErrorEl.hidden = false;
     setPurchaseButtonState("idle");
+  } finally {
+    purchaseInProgress = false;
   }
 }
 
 function refreshPurchaseButton() {
   if (!purchaseBtn) return;
-  purchaseErrorEl.hidden = true; // don't carry a stale error across dialog re-opens, matching refreshSettingsDialog()'s own full-recompute pattern (notifications.js)
+  if (purchaseErrorEl) purchaseErrorEl.hidden = true; // don't carry a stale error across dialog re-opens, matching refreshSettingsDialog()'s own full-recompute pattern (notifications.js)
   if (!digitalGoodsAvailable()) {
     purchaseBtn.hidden = true; // not a TWA -- a purchase could never complete here, don't show a dead-end button
     return;
@@ -210,3 +224,71 @@ async function refreshPurchaseLabelPrice() {
 
 purchaseBtn?.addEventListener("click", purchaseRemoveAds);
 document.addEventListener("sofrim-yamim:settings-opened", refreshPurchaseButton);
+
+// Story 3.3 / AD-4: restore on every cold start (and again whenever the
+// app returns to the foreground -- a purchase can complete via Play
+// while this PWA instance sits backgrounded) -- a user with a valid
+// purchase on a new device/reinstall must not have to buy again just
+// because sofrim-yamim.purchase.v1 is empty there. listPurchases() asks
+// Play directly instead of trusting the local cache alone. This is also
+// the real fix for Story 3.2's deferred "already owned" retry problem: a
+// failed purchase attempt for an already-owned SKU self-corrects the
+// next time the app cold-starts, without needing special-case handling
+// in the purchase flow itself.
+//
+// Only requires the Digital Goods half of digitalGoodsAvailable() --
+// this never opens a payment sheet, so it doesn't need PaymentRequest.
+//
+// ⚠️ Same real-device caveat as the purchase flow above: `owned` here
+// treats *any* listPurchases() entry matching PRODUCT_SKU as fully
+// owned, with no handling of a PENDING (not yet finalized) entry --
+// unverified against a real device, see deferred-work.md.
+let restoreCheckInFlight = false;
+
+async function restorePurchases() {
+  if (!digitalGoodsServiceAvailable()) return;
+  if (restoreCheckInFlight) return; // cold-start + a rapid visibilitychange could otherwise race
+  restoreCheckInFlight = true;
+  try {
+    const service = await window.getDigitalGoodsService("https://play.google.com/billing");
+    const purchases = await service.listPurchases();
+    // listPurchases() is documented to return only currently-valid
+    // purchases (a cancelled/refunded one wouldn't appear) -- for this
+    // app's single non-consumable SKU, presence alone means "owned."
+    const owned = Array.isArray(purchases) && purchases.some((p) => p?.itemId === PRODUCT_SKU);
+    if (owned && !hasRemovedAds()) {
+      savePurchaseState(true);
+      if (typeof announce === "function") announce("הפרסומות הוסרו."); // same outcome as a manual purchase (Story 3.2) -- same announcement, in case this resolves while the user isn't even looking at Settings
+    }
+  } catch (err) {
+    // Silent per AD-6-style convention: this is a background
+    // reconciliation check, never a blocker for anything else in the app.
+    console.debug("[sofrim-yamim] restorePurchases failed (non-blocking):", err);
+  } finally {
+    restoreCheckInFlight = false;
+  }
+}
+
+// Cold start: restorePurchases() runs BEFORE the *first* refreshAdBanner()
+// call, per AD-4/epics.md's explicit requirement that the restore check
+// must settle before the banner's show/hide decision is finalized, so a
+// returning user doesn't see a flicker of an already-purchased banner.
+// This is cheap for the vast majority of users (no Digital Goods API at
+// all -- digitalGoodsServiceAvailable() short-circuits synchronously);
+// only real TWA users, who this exists for, actually wait on a
+// listPurchases() round-trip.
+(async () => {
+  await restorePurchases();
+  refreshAdBanner();
+})();
+
+// Foreground return: re-check (a purchase could complete via Play while
+// this PWA sits backgrounded), then refresh both seams -- but never
+// clobber the purchase button while an actual purchase attempt has a
+// native payment sheet potentially still open (purchaseInProgress).
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible") return;
+  await restorePurchases();
+  refreshAdBanner();
+  if (!purchaseInProgress) refreshPurchaseButton();
+});
