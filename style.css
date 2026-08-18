@@ -426,7 +426,19 @@ button {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+  /* Story 3.2: same white-on-gradient contrast failure Story 1.4 found
+     and fixed for .app-header (white on raw accent-pink measures ~2.9:1,
+     below even the 3:1 large-text floor) turns out to also apply to this
+     button -- Story 1.4 scoped its scrim fix to the header only and
+     explicitly left buttons unaddressed. Confirmed failing again here
+     while building the purchase button (arguably the highest-stakes
+     button in the app for legibility), so applying the same fix broadly
+     to .btn-primary -- this also corrects the pre-existing "שמירה"
+     button, not just the new one. Same 30% scrim, same measured
+     worst-case >=5.38:1 as the header. */
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+    linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
   color: #fff;
   font-weight: 600;
 }
@@ -632,4 +644,54 @@ button {
      so hasRemovedAds() actually hides the banner, not just leaves an
      empty bar. */
   display: none;
+}
+
+/* Story 3.2: purchase button -- reuses .btn-primary's existing gradient
+   style (same visual language as "שמירה"), full width in the Settings
+   dialog. */
+.purchase-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.purchase-btn:disabled {
+  cursor: default;
+}
+
+/* "pending" (mid-purchase) is .purchase-btn:disabled without .done --
+   keeps the brand gradient + spinner. "done" (already owned) gets a
+   flat, muted surface instead -- at a glance (or in a screenshot) the
+   two are otherwise nearly identical, telling "in progress" and
+   "already removed" apart shouldn't depend on spotting a small spinner. */
+.purchase-btn.done {
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-glass-border);
+  color: var(--text-secondary);
+}
+
+.purchase-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: purchase-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes purchase-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .purchase-spinner {
+    animation: none;
+    /* Still communicates "busy" without a spin -- a half-opacity ring
+       instead of just disappearing (which would drop the loading
+       indication for reduced-motion users, not just the animation). */
+    opacity: 0.6;
+  }
 }

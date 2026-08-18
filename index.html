@@ -103,6 +103,17 @@
       <input type="checkbox" id="notifToggle" class="settings-toggle" role="switch">
     </div>
     <p id="notifDeniedHint" class="presets-hint" hidden></p>
+
+    <!-- Story 3.2 / AD-4: hidden entirely by default (billing.js reveals
+         it only when the Digital Goods API actually exists -- i.e.
+         running as an installed TWA; not shown at all in a regular
+         browser tab, where a purchase attempt could never complete). -->
+    <button type="button" id="purchaseBtn" class="btn-primary purchase-btn" hidden>
+      <span class="purchase-btn-label">הסרת פרסומות — $1.99</span>
+      <span class="purchase-spinner" hidden aria-hidden="true"></span>
+    </button>
+    <p id="purchaseError" class="presets-hint" role="alert" hidden></p>
+
     <div class="dialog-actions">
       <button type="button" id="closeSettingsBtn" class="btn-secondary">סגירה</button>
     </div>
