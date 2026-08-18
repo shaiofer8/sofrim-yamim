@@ -1,15 +1,20 @@
-const CACHE_NAME = "sofrim-yamim-v32";
+const CACHE_NAME = "sofrim-yamim-v33";
+// Relative (no leading "/"): resolved against this file's own location, so
+// this works whether the app is deployed at a domain root or under a
+// subpath (e.g. a GitHub Pages project site at /sofrim-yamim/) without any
+// per-deployment configuration. Root-absolute paths broke exactly this case
+// -- caught when redeploying to https://shaiofer8.github.io/sofrim-yamim/.
 const ASSETS = [
-  "/",
-  "/index.html",
-  "/style.css",
-  "/app.js",
-  "/holidays.js",
-  "/notifications.js",
-  "/billing.js",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
+  "./",
+  "./index.html",
+  "./style.css",
+  "./app.js",
+  "./holidays.js",
+  "./notifications.js",
+  "./billing.js",
+  "./manifest.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -137,8 +142,8 @@ async function notifyForTomorrow() {
           body: "מחר",
           tag: `sofrim-yamim-reminder-${ev.id}`, // shared with notifications.js's fallback check (Story 2.5) -- same tag on purpose, so the two mechanisms collapse into one notification instead of showing two
           renotify: true, // re-alert (sound/vibration) even on a same-tag replacement -- a silent retry that never actually surfaces defeats a best-effort feature that may need exactly that retry
-          icon: "/icons/icon-192.png",
-          badge: "/icons/icon-192.png",
+          icon: "./icons/icon-192.png",
+          badge: "./icons/icon-192.png",
           dir: "rtl",
           lang: "he",
         });
@@ -166,7 +171,7 @@ self.addEventListener("notificationclick", (event) => {
         for (const client of clients) {
           if ("focus" in client) return client.focus();
         }
-        if (self.clients.openWindow) return self.clients.openWindow("/");
+        if (self.clients.openWindow) return self.clients.openWindow("./");
         return undefined;
       })
   );
