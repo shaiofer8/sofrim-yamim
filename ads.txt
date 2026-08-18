@@ -1,0 +1,8 @@
+# Story 3.1: required by Google AdSense for ad fill/eligibility (without
+# it, Google's own AdSense console reports degraded fill and warnings).
+# Must live at the domain root once deployed: https://<domain>/ads.txt
+#
+# ⚠️ PLACEHOLDER -- pub-0000000000000000 must be replaced with the real
+# publisher id from the AdSense account (same id as the "ca-pub-..."
+# value in index.html, minus the "ca-" prefix) before this is meaningful.
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

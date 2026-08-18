@@ -17,6 +17,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="סופרים ימים">
 <link rel="stylesheet" href="style.css">
+<!--
+  Story 3.1 / AD-5: Google AdSense web tag (NOT AdMob native SDK).
+  ⚠️ PLACEHOLDER CLIENT ID -- replace ca-pub-0000000000000000 below (and
+  the matching data-ad-client/data-ad-slot in the #ad-banner <ins> in the
+  body) with the real values once the AdSense account + ad unit exist.
+  This loader script itself loads fine regardless of the client id (it's
+  a generic library) -- the placeholder only fails later, when billing.js
+  requests an actual ad into the slot, deep inside Google's own code.
+-->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000" crossorigin="anonymous"></script>
 </head>
 <body>
 <div id="liveStatus" class="sr-only" role="status" aria-live="polite"></div>
@@ -111,8 +121,33 @@
   </div>
 </dialog>
 
+<!-- Story 3.1 / AD-9: static element, main screen only, never inside a
+     dialog. Existence is permanent -- billing.js only ever toggles the
+     "hidden" attribute (hasRemovedAds()), never creates/removes this
+     element. Visible by default (no purchase = ads on) so there's no
+     flash-of-hidden-content before billing.js decides. The <ins> markup
+     itself is static too, but *requesting* an ad into it (pushing to
+     window.adsbygoogle) is billing.js's job, gated on hasRemovedAds() --
+     see there. A paying user should never pay the network/battery cost
+     of an ad request just because the (hidden) slot still exists. -->
+<div id="ad-banner" class="ad-banner" aria-label="פרסומת">
+  <!--
+    ⚠️ PLACEHOLDER data-ad-client / data-ad-slot -- see the loader
+    <script> comment in <head>. Both must be replaced with real AdSense
+    values (a real ad unit, created in the AdSense dashboard, has its
+    own slot id distinct from the account-wide client id).
+  -->
+  <ins class="adsbygoogle"
+       style="display:block; width:100%"
+       data-ad-client="ca-pub-0000000000000000"
+       data-ad-slot="0000000000"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+</div>
+
 <script src="holidays.js"></script>
 <script src="app.js"></script>
 <script src="notifications.js"></script>
+<script src="billing.js"></script>
 </body>
 </html>

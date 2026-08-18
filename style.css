@@ -242,6 +242,12 @@ body {
 
 .event-list {
   padding: 16px;
+  /* Story 3.1: room for the fixed Ad Banner so it never overlaps the
+     last row. Static (not toggled when ads are removed) -- a little
+     extra empty space at the bottom post-purchase is a minor cosmetic
+     nit, not worth the added complexity of syncing this to billing.js's
+     display decision. */
+  padding-bottom: calc(48px + 16px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -590,4 +596,40 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .just-saved { animation: none; }
   .confetti-piece { display: none; }
+}
+
+/* Story 3.1: Ad Banner -- fixed strip, main screen only (never rendered
+   inside a <dialog>; native dialogs sit in the browser's own top layer
+   above any z-index here regardless, so this needs no special handling
+   for that). Deliberately bg-elev, not surface-glass -- quieter, doesn't
+   compete visually the way another glass surface would (DESIGN.md). */
+.ad-banner {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  width: 100%;
+  min-height: 48px;
+  /* No overflow:hidden / max-height on purpose: a responsive AdSense
+     unit isn't guaranteed to fit in 48px, and clipping ad content is
+     itself an AdSense policy violation -- min-height is a floor, not a
+     cap. .event-list's matching padding-bottom is a best-effort
+     estimate on the same assumption; see deferred-work.md re: switching
+     to Google's Anchor ad format, built specifically for a fixed bottom
+     bar like this, once there's a real account to configure it in. */
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg-elev);
+  border-top: 1px solid var(--surface-glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+
+.ad-banner[hidden] {
+  /* Same reasoning as Story 1.2's Hero Card: [hidden] and a class rule
+     that sets `display` have equal specificity, and this author-
+     stylesheet rule would otherwise win the tie -- state it explicitly
+     so hasRemovedAds() actually hides the banner, not just leaves an
+     empty bar. */
+  display: none;
 }

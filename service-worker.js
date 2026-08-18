@@ -1,4 +1,4 @@
-const CACHE_NAME = "sofrim-yamim-v26";
+const CACHE_NAME = "sofrim-yamim-v28";
 const ASSETS = [
   "/",
   "/index.html",
@@ -6,6 +6,7 @@ const ASSETS = [
   "/app.js",
   "/holidays.js",
   "/notifications.js",
+  "/billing.js",
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -29,6 +30,14 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  // Same-origin only. Without this, cross-origin requests -- Google
+  // Fonts (Story 1.1), and since Story 3.1 the AdSense script/ad
+  // iframes/pixels -- would run through this cache-then-network-race
+  // logic too, which is unnecessary overhead for assets this app never
+  // intends to cache, and a real risk for ad-serving specifically (ad
+  // networks often depend on cookies/redirect behavior this generic
+  // handler doesn't preserve).
+  if (new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const network = fetch(event.request)
