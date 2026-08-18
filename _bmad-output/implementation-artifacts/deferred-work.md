@@ -55,3 +55,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-restore-purchases.md`
   summary: Restore is one-directional — once `savePurchaseState(true)` is set, nothing ever sets it back to `false` if a later `listPurchases()` call stops returning the SKU (refund, chargeback, revocation). A refunded user keeps ads removed indefinitely.
   evidence: Blind-hunter review of Story 3.3 flagged this. Not fixed here because handling a revocation is a real UX decision (how/when to tell a user a paid feature is being taken away, whether to re-show the ad banner immediately or grace-period it) that the story's AC doesn't ask for and shouldn't be improvised inline — refunds on a $1.99 one-time purchase are also a rare enough case that this is reasonable to revisit later rather than block on now.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-1-twa-bubblewrap-init.md`
+  summary: `twa-manifest.json`'s `signingKey.path` is a hardcoded absolute Windows path tied to this machine/username (`c:\Users\shaio\sofrim-yamim\android.keystore`) — not portable to another machine or CI.
+  evidence: Blind-hunter + edge-case-hunter review of Story 4.1 both flagged this. Not fixed here because this exactly matches upstream `@bubblewrap/cli`'s own `init` behavior (`path.join(targetDirectory, relativeDefault)` always resolves to an absolute path) — it is not a mistake introduced by this story's implementation. Changing it to a relative path is not obviously safe without confirming `bubblewrap build`/`bubblewrap update` (Story 4.3+) actually resolve a relative `signingKey.path` correctly rather than against an unexpected base directory; revisit then, on a real build, rather than guess now.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-1-twa-bubblewrap-init.md`
+  summary: No documented step for validating the generated TWA before Play Store submission (sideloading a debug build, `bubblewrap install`, or emulator testing) — the path currently jumps straight from "project generated" to "upload to Play Console."
+  evidence: Blind-hunter review of Story 4.1 flagged this. Not fixed here because Story 4.1's AC only covers `bubblewrap init` (project + keystore generation) — actually building and installing a debug/test APK belongs with Story 4.3 (`bubblewrap build`), the natural point where there is something installable to validate.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-1-twa-bubblewrap-init.md`
+  summary: `minSdkVersion: 21` (Bubblewrap's own default, unchanged) combined with the newly-enabled `playBilling` feature (`com.google.androidbrowserhelper:billing:1.2.0`) has not been verified compatible on a real device.
+  evidence: Blind-hunter review of Story 4.1 flagged this. Not fixed here because it falls under the same "Digital Goods API / Play Billing can only be verified inside a real installed TWA" limitation already accepted throughout Epic 3 (Stories 3.1-3.3) — Bubblewrap itself did not warn or reject the combination when generating the project, which is some signal it's a known-supported pairing, but real confirmation needs an actual device/build (Story 4.3+).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-1-twa-bubblewrap-init.md`
+  summary: No documented workflow for keeping the generated TWA project in sync when the live PWA's `manifest.json` (icons, theme colors, name, etc.) changes after `twa-manifest.json` already exists — `bubblewrap update` exists for exactly this but isn't mentioned anywhere in the repo.
+  evidence: Blind-hunter review of Story 4.1 flagged this. Not fixed here because it's an ongoing-maintenance concern that only becomes relevant after the PWA's manifest actually changes post-TWA-generation — out of scope for the initial `init` story; worth a README note whenever that first happens or as part of a later publishing-maintenance story.
