@@ -34,6 +34,21 @@ function hasRemovedAds() {
 // its existence or contents -- that element and its AdSense <ins> markup
 // are static HTML (index.html), never created/destroyed/rewritten here.
 const adBannerEl = document.getElementById("ad-banner");
+const adInsEl = adBannerEl?.querySelector("ins.adsbygoogle");
+
+// True until index.html's placeholder ca-pub-0000000000000000 is replaced
+// with a real AdSense client id. Found the hard way: calling push({}) for
+// this slot doesn't just silently fail the ad *request* (the pre-existing
+// assumption below) -- the adsbygoogle.js SDK still actively manages the
+// <ins>'s container sizing while it tries, and sets its own inline
+// `!important` height on #ad-banner itself based on that guess. With no
+// real ad ever able to fill, that guess has nothing real to size against
+// and reserved ~390px (most of the screen) on a real device -- no CSS
+// max-height can win against an inline !important set by someone else's
+// script. Skipping push() entirely for the placeholder id is the actual
+// fix: the SDK never touches the slot's sizing if it's never asked to
+// fill it.
+const isPlaceholderAdClient = adInsEl?.dataset.adClient === "ca-pub-0000000000000000";
 
 // Public seam: Story 3.2 (purchase flow) and Story 3.3 (restore-on-
 // cold-start) both call this after they change what hasRemovedAds()
@@ -42,8 +57,8 @@ const adBannerEl = document.getElementById("ad-banner");
 function refreshAdBanner() {
   if (!adBannerEl) return;
   const removed = hasRemovedAds();
-  adBannerEl.hidden = removed;
-  if (!removed) {
+  adBannerEl.hidden = removed || isPlaceholderAdClient;
+  if (!removed && !isPlaceholderAdClient) {
     // The <ins> markup is static, but *requesting* an ad into it is not
     // -- a paying user (once Story 3.2 exists) should never cause this
     // network/battery cost just because the hidden slot still exists in
@@ -53,7 +68,7 @@ function refreshAdBanner() {
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
-      console.debug("[sofrim-yamim] adsbygoogle push failed (non-blocking, expected with the placeholder client id):", err);
+      console.debug("[sofrim-yamim] adsbygoogle push failed (non-blocking):", err);
     }
   }
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "sofrim-yamim-v33";
+const CACHE_NAME = "sofrim-yamim-v34";
 // Relative (no leading "/"): resolved against this file's own location, so
 // this works whether the app is deployed at a domain root or under a
 // subpath (e.g. a GitHub Pages project site at /sofrim-yamim/) without any
