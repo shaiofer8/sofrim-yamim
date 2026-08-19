@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.sofrimyamim.app",
+      "sha256_cert_fingerprints": [
+        "D8:89:D0:27:66:82:3A:C9:80:53:18:CC:15:A6:25:9B:FB:8E:F9:3B:AC:55:7B:57:0B:22:DB:D5:28:F0:75:08"
+      ]
+    }
+  }
+]

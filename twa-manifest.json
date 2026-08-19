@@ -1,6 +1,6 @@
 {
   "packageId": "com.sofrimyamim.app",
-  "host": "shaiofer8.github.io",
+  "host": "sofrimyamim.com",
   "name": "סופרים ימים",
   "launcherName": "סופרים ימים",
   "display": "standalone",
@@ -12,9 +12,9 @@
   "navigationDividerColorDark": "#000000",
   "backgroundColor": "#150C2E",
   "enableNotifications": true,
-  "startUrl": "/sofrim-yamim/?source=pwa",
-  "iconUrl": "https://shaiofer8.github.io/sofrim-yamim/icons/icon-512.png",
-  "maskableIconUrl": "https://shaiofer8.github.io/sofrim-yamim/icons/icon-maskable-512.png",
+  "startUrl": "/?source=pwa",
+  "iconUrl": "https://sofrimyamim.com/icons/icon-512.png",
+  "maskableIconUrl": "https://sofrimyamim.com/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "c:\\Users\\shaio\\sofrim-yamim\\android.keystore",
@@ -24,7 +24,7 @@
   "appVersionCode": 1,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://shaiofer8.github.io/sofrim-yamim/manifest.json",
+  "webManifestUrl": "https://sofrimyamim.com/manifest.json",
   "fallbackType": "customtabs",
   "features": {
     "playBilling": {
@@ -37,7 +37,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://shaiofer8.github.io/sofrim-yamim/",
+  "fullScopeUrl": "https://sofrimyamim.com/",
   "minSdkVersion": 21,
   "orientation": "portrait",
   "fingerprints": [],
