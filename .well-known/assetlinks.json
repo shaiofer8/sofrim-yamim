@@ -5,7 +5,9 @@
       "namespace": "android_app",
       "package_name": "com.sofrimyamim.app",
       "sha256_cert_fingerprints": [
-        "D8:89:D0:27:66:82:3A:C9:80:53:18:CC:15:A6:25:9B:FB:8E:F9:3B:AC:55:7B:57:0B:22:DB:D5:28:F0:75:08"
+        "D8:89:D0:27:66:82:3A:C9:80:53:18:CC:15:A6:25:9B:FB:8E:F9:3B:AC:55:7B:57:0B:22:DB:D5:28:F0:75:08",
+        "96:0F:88:25:5B:FF:9F:06:83:7D:74:4F:A2:9E:88:F0:28:D9:F7:E9:C5:2F:1F:B3:78:FF:FE:C4:11:DF:98:38",
+        "EC:9A:8F:DC:8C:94:03:1E:4B:64:8B:59:BE:AC:D4:EA:55:29:A1:14:FF:69:26:E6:2F:73:6E:5B:76:99:93:16"
       ]
     }
   }
