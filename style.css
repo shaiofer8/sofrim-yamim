@@ -263,8 +263,9 @@ body {
      last row. Static (not toggled when ads are removed) -- a little
      extra empty space at the bottom post-purchase is a minor cosmetic
      nit, not worth the added complexity of syncing this to billing.js's
-     display decision. */
-  padding-bottom: calc(48px + 16px + env(safe-area-inset-bottom));
+     display decision. Matches .ad-banner's max-height (100px), not its
+     min-height -- the banner can legitimately be anywhere up to that. */
+  padding-bottom: calc(100px + 16px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -638,13 +639,18 @@ button {
   bottom: 0;
   width: 100%;
   min-height: 48px;
-  /* No overflow:hidden / max-height on purpose: a responsive AdSense
-     unit isn't guaranteed to fit in 48px, and clipping ad content is
-     itself an AdSense policy violation -- min-height is a floor, not a
-     cap. .event-list's matching padding-bottom is a best-effort
-     estimate on the same assumption; see deferred-work.md re: switching
-     to Google's Anchor ad format, built specifically for a fixed bottom
-     bar like this, once there's a real account to configure it in. */
+  /* max-height as a defensive cap, found necessary in practice: with
+     the current placeholder AdSense client id (no real account yet),
+     the "auto"/full-width-responsive unit's sizing guess before its
+     (inevitable, placeholder-driven) load failure reserved ~390px --
+     most of the screen -- on a real device. 100px is generous for any
+     legitimate bottom-anchor ad and still >48px; overflow:hidden only
+     bites if a real unit ever tries to exceed that, which would be an
+     oversized placement choice on Google's part, not lost content.
+     Revisit alongside deferred-work.md's Anchor-ad-format note once a
+     real AdSense account exists. */
+  max-height: 100px;
+  overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--bg-elev);
   border-top: 1px solid var(--surface-glass-border);
