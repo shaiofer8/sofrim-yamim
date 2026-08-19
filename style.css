@@ -68,17 +68,34 @@
   border: 0;
 }
 
-html, body {
+/* `html`'s background paints the canvas -- the whole scrollable/visible
+   area, not just this element's own box -- which is what actually
+   matters here. `body`'s own min-height (below) is layout-only, no
+   background of its own: on iOS Safari, a page shorter than the
+   *largest* possible viewport (address bar hidden) can reveal area
+   below body's `100dvh`-computed box before/while `dvh` re-resolves as
+   the chrome collapses on scroll -- confirmed live on the empty-state
+   screen (short content, nothing to scroll to normally). A background
+   confined to body's box leaves that strip showing the UA's own
+   `color-scheme` canvas default (paints white in light mode) instead
+   of --bg-base. Canvas-level painting via `html` isn't bounded by any
+   box's computed height, so it holds regardless of the exact dvh
+   timing quirk. */
+html {
   margin: 0;
   padding: 0;
   background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: "Heebo", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-  min-height: 100dvh;
+  min-height: 100%;
 }
 
 body {
+  margin: 0;
+  padding: 0;
   padding-bottom: env(safe-area-inset-bottom);
+  color: var(--text-primary);
+  font-family: "Heebo", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .app-header {
