@@ -148,12 +148,20 @@
     values (a real ad unit, created in the AdSense dashboard, has its
     own slot id distinct from the account-wide client id).
   -->
+  <!--
+    Deliberately NOT data-ad-format="auto" + data-full-width-responsive:
+    that combination lets AdSense pick any shape it likes, including tall
+    square units, and it picked a ~390px one (most of a phone screen) in
+    a real demo. "horizontal" asks for wide-and-short stock only, and the
+    explicit 50px height caps what can render even if a wider unit is
+    served. Together with .ad-banner's fixed height in style.css this
+    keeps the bar at ~8% of a phone viewport instead of ~50%.
+  -->
   <ins class="adsbygoogle"
-       style="display:block; width:100%"
+       style="display:block; width:100%; height:50px"
        data-ad-client="ca-pub-0000000000000000"
        data-ad-slot="0000000000"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
+       data-ad-format="horizontal"></ins>
 </div>
 
 <script src="holidays.js"></script>
