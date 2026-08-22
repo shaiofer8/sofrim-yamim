@@ -73,3 +73,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-1-twa-bubblewrap-init.md`
   summary: No documented workflow for keeping the generated TWA project in sync when the live PWA's `manifest.json` (icons, theme colors, name, etc.) changes after `twa-manifest.json` already exists — `bubblewrap update` exists for exactly this but isn't mentioned anywhere in the repo.
   evidence: Blind-hunter review of Story 4.1 flagged this. Not fixed here because it's an ongoing-maintenance concern that only becomes relevant after the PWA's manifest actually changes post-TWA-generation — out of scope for the initial `init` story; worth a README note whenever that first happens or as part of a later publishing-maintenance story.
+
+- source_spec: none
+  summary: Consider adding a subtle color accent (thin side-stripe on the card, not full background tint) per event, letting users tell events apart at a glance in a long list — user saw this pattern on a similar iPhone app and liked it.
+  evidence: DESIGN.md currently forbids event color-coding explicitly ("אין להוסיף פלטת קטגוריות צבעונית לאירועים -- האייקון כבר מספק בידול, צבע נוסף יהיה רעש") as a deliberate differentiator against cluttered competitor apps. User raised this 2026-08-21 mid-session and agreed to defer to a v2 backlog item rather than revisit the design decision now while the app is mid-review in Google Play. If pursued later: a thin left-border/dot accent (not full-card tint) would preserve the "one clean screen" thesis better than a full background-color treatment.

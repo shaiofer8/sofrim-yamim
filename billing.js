@@ -1,6 +1,14 @@
 // Monetization (Epic 3). Loaded last (AD-1) -- may reference globals
 // defined in app.js/notifications.js, never the reverse.
 
+// 2026-08-22, שי: הוחלט להשבית מונטיזציה לגמרי בזמן בדיקות-הבודקים --
+// גם באנר הפרסומות (ממילא מוסתר כרגע, ר' isPlaceholderAdClient למטה) וגם
+// כפתור הרכישה (שכן מוצג בפועל בטלפון אמיתי דרך Digital Goods API,
+// למרות שאין עדיין AdSense אמיתי -- שני מנגנונים נפרדים). המטרה: פונקציונליות
+// מלאה וחינמית לבודקים בשלב הזה, בלי שום משטח-מונטיזציה גלוי. דגל יחיד,
+// לא תיקון-קוד פזור -- להחזיר ל-true כשרוצים להפעיל מונטיזציה מחדש.
+const MONETIZATION_ENABLED = false;
+
 // AD-4: purchase state lives in its own dedicated localStorage key, never
 // mixed into the events key. Shape (locked by AD-4, keep as-is):
 // { adsRemoved: boolean, verifiedAt: ISO-timestamp }.
@@ -56,6 +64,10 @@ const isPlaceholderAdClient = adInsEl?.dataset.adClient === "ca-pub-000000000000
 // updates immediately without a page reload.
 function refreshAdBanner() {
   if (!adBannerEl) return;
+  if (!MONETIZATION_ENABLED) {
+    adBannerEl.hidden = true;
+    return;
+  }
   const removed = hasRemovedAds();
   adBannerEl.hidden = removed || isPlaceholderAdClient;
   if (!removed && !isPlaceholderAdClient) {
@@ -134,7 +146,7 @@ function setPurchaseButtonState(state) {
 }
 
 async function purchaseRemoveAds() {
-  if (!digitalGoodsAvailable() || !purchaseBtn) return;
+  if (!MONETIZATION_ENABLED || !digitalGoodsAvailable() || !purchaseBtn) return;
 
   purchaseInProgress = true;
   purchaseErrorEl.hidden = true;
@@ -208,6 +220,10 @@ async function purchaseRemoveAds() {
 
 function refreshPurchaseButton() {
   if (!purchaseBtn) return;
+  if (!MONETIZATION_ENABLED) {
+    purchaseBtn.hidden = true;
+    return;
+  }
   if (purchaseErrorEl) purchaseErrorEl.hidden = true; // don't carry a stale error across dialog re-opens, matching refreshSettingsDialog()'s own full-recompute pattern (notifications.js)
   if (!digitalGoodsAvailable()) {
     purchaseBtn.hidden = true; // not a TWA -- a purchase could never complete here, don't show a dead-end button

@@ -221,11 +221,15 @@ body {
 }
 
 .hero-name {
+  /* 2026-08-22: was white-space:nowrap + text-overflow:ellipsis, truncating
+     real event names ("תחילת שנת הלימודים" -> "תחילת שנת הלי...") past
+     readability -- found live by a tester. .hero-info's flex:1/min-width:0
+     (above) already supports wrapping correctly; the card has no fixed
+     height, so letting the name wrap just grows the card instead of
+     hiding text. */
   font-weight: 700;
   font-size: 1.2rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
 }
 
 .hero-date {
@@ -679,6 +683,18 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+/* 2026-08-22: .purchase-btn's own `display: flex` above has the same
+   specificity as the UA stylesheet's `[hidden] { display: none }` and
+   wins the cascade tie (author rules load after UA defaults) -- so
+   setting the `hidden` attribute in JS (billing.js's MONETIZATION_ENABLED
+   guard, or the pre-existing !digitalGoodsAvailable() case) silently had
+   no visual effect. Found live: a real TWA install showed the purchase
+   button despite billing.js setting hidden=true. This selector's higher
+   specificity (0,2,0) restores the expected behavior. */
+.purchase-btn[hidden] {
+  display: none;
 }
 
 .purchase-btn:disabled {
