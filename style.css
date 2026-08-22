@@ -338,11 +338,15 @@ body {
 }
 
 .event-name {
+  /* 2026-08-22 audit: same truncation bug already found and fixed live for
+     .hero-name (a real event name got cut off mid-word) -- this rule had
+     the identical white-space:nowrap+ellipsis pattern and would silently
+     hit the same failure for any long name in the compact list, not just
+     the Hero Card. .event-info's flex:1/min-width:0 already supports
+     wrapping; the row has no fixed height, so wrapping just grows it. */
   font-weight: 600;
   font-size: 1.05rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
 }
 
 .event-date {

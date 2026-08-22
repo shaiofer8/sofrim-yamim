@@ -18,6 +18,22 @@ const MONETIZATION_ENABLED = false;
 // at all. It records *when* the purchase completed, not an independent
 // verification of it; Story 3.3's listPurchases()-based restore is what
 // re-confirms ownership against Play's own records on cold start.
+// 2026-08-22 audit: index.html used to load the AdSense <script> tag
+// unconditionally in <head>, so it fetched from Google on every single
+// page load even while MONETIZATION_ENABLED is false -- a real, wasted
+// network request for a feature that's fully off during testing. Inject
+// it dynamically, and only when the flag is actually on. Safe regardless
+// of load order relative to refreshAdBanner()'s push({}) call below --
+// that's the documented AdSense async pattern (the array queues pushes
+// whether or not the library has finished loading yet).
+if (MONETIZATION_ENABLED) {
+  const adsenseScript = document.createElement("script");
+  adsenseScript.async = true;
+  adsenseScript.crossOrigin = "anonymous";
+  adsenseScript.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000";
+  document.head.appendChild(adsenseScript);
+}
+
 const PURCHASE_KEY = "sofrim-yamim.purchase.v1";
 
 function savePurchaseState(adsRemoved) {
@@ -277,6 +293,13 @@ document.addEventListener("sofrim-yamim:settings-opened", refreshPurchaseButton)
 let restoreCheckInFlight = false;
 
 async function restorePurchases() {
+  // 2026-08-22 audit: unlike refreshAdBanner()/purchaseRemoveAds()/
+  // refreshPurchaseButton(), this didn't check MONETIZATION_ENABLED -- on
+  // a real installed TWA (digitalGoodsServiceAvailable() can be true for
+  // real testers, not just a hypothetical), this could still write a
+  // stale "purchased" localStorage record while monetization is supposed
+  // to be fully off.
+  if (!MONETIZATION_ENABLED) return;
   if (!digitalGoodsServiceAvailable()) return;
   if (restoreCheckInFlight) return; // cold-start + a rapid visibilitychange could otherwise race
   restoreCheckInFlight = true;
@@ -330,7 +353,12 @@ document.addEventListener("visibilitychange", async () => {
 // דיאלוג-ריק. חי כאן (הקובץ האחרון בסדר-הטעינה, AD-1) כי זה הקובץ היחיד
 // שרואה את שני הדגלים; אם אחד מהם יחזור ל-true, הכפתור חוזר להופיע
 // אוטומטית -- אין דגל שלישי נפרד לשכוח.
+// 2026-08-22 audit: settingsBtn now starts `hidden` by default in
+// index.html itself (fails safe if this file is ever blocked/fails to
+// load -- e.g. an ad/content blocker matching "billing.js" by filename --
+// and avoids a flash-of-visible-button before this line runs). This is
+// now the one place that *reveals* it, not the one place that hides it.
 const settingsBtnEl = document.getElementById("settingsBtn");
-if (settingsBtnEl && !NOTIFICATIONS_ENABLED && !MONETIZATION_ENABLED) {
-  settingsBtnEl.hidden = true;
+if (settingsBtnEl) {
+  settingsBtnEl.hidden = !(NOTIFICATIONS_ENABLED || MONETIZATION_ENABLED);
 }

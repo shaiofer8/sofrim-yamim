@@ -56,14 +56,30 @@ let editingId = null;
 
 function loadEvents() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    // 2026-08-22 audit: `parsed || []` only rescues a *falsy* parse result
+    // (null, 0, ""), not a truthy-but-wrong shape (e.g. corrupted storage
+    // holding "{}"). render()'s .sort() would then throw on every render,
+    // permanently blanking the app until storage is manually cleared.
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
 function saveEvents(events) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  } catch (err) {
+    // 2026-08-22 audit: unlike loadEvents(), this had no guard -- a quota-
+    // exceeded or blocked-storage write (private browsing, some WebView
+    // restrictions) would throw uncaught mid-handler, leaving the dialog
+    // in a broken state with no feedback. Tell the caller so it doesn't
+    // proceed as though the save succeeded.
+    console.warn("saveEvents: localStorage.setItem failed:", err);
+    if (typeof announce === "function") announce("השמירה נכשלה. נסו שוב.");
+    return false;
+  }
   // Story 2.1: keep the Service Worker's IndexedDB snapshot in sync on
   // every save. Guarded, not a hard dependency -- notifications.js loads
   // after this file (AD-1) and defines the function by the time any user
@@ -72,6 +88,7 @@ function saveEvents(events) {
   if (typeof syncIndexedDBSnapshot === "function") {
     syncIndexedDBSnapshot(events);
   }
+  return true;
 }
 
 function daysUntil(dateStr) {
@@ -89,8 +106,13 @@ function formatHebrewDate(dateStr) {
 function countLabel(diff) {
   if (diff === 0) return { num: "היום", label: "🎉" };
   if (diff === 1) return { num: "מחר", label: "" };
+  // 2026-08-22 audit: Hebrew uses the dual form "יומיים" for exactly two
+  // days, not "2 ימים" -- the code already special-cases 0/±1 for this
+  // exact reason, so plain "2" was a gap, not a deliberate simplification.
+  if (diff === 2) return { num: "יומיים", label: "" };
   if (diff > 1) return { num: diff, label: "ימים" };
   if (diff === -1) return { num: "אתמול", label: "" };
+  if (diff === -2) return { num: "יומיים", label: "עברו" };
   return { num: Math.abs(diff), label: "ימים עברו" };
 }
 
@@ -120,7 +142,7 @@ function renderHero(ev) {
 
   heroEl.hidden = false;
   heroEl.innerHTML = `
-    <div class="hero-emoji">${ev.emoji}</div>
+    <div class="hero-emoji">${escapeHtml(ev.emoji)}</div>
     <div class="hero-info">
       <div class="hero-name">${escapeHtml(ev.name)}${ev.isFavorite ? ' <span class="favorite-star" aria-label="מועדף">⭐</span>' : ""}</div>
       <div class="hero-date">${formatHebrewDate(ev.date)}</div>
@@ -170,7 +192,7 @@ function render() {
     card.className = "event-card" + (diff < 0 ? " past" : "");
     card.dataset.id = ev.id;
     card.innerHTML = `
-      <div class="event-emoji">${ev.emoji}</div>
+      <div class="event-emoji">${escapeHtml(ev.emoji)}</div>
       <div class="event-info">
         <div class="event-name">${escapeHtml(ev.name)}${ev.isFavorite ? ' <span class="favorite-star" aria-label="מועדף">⭐</span>' : ""}</div>
         <div class="event-date">${formatHebrewDate(ev.date)}</div>
@@ -410,6 +432,15 @@ function refreshAppBadge() {
     navigator.clearAppBadge().catch(() => {});
     return;
   }
+  if (diff === 0) {
+    // 2026-08-22 audit: per the Badging API spec, setAppBadge(0) is treated
+    // identically to clearAppBadge() -- so on the exact day the favorite
+    // event happens (the day the badge matters most), passing 0 would make
+    // the icon badge silently disappear instead of showing anything. The
+    // no-arg form requests the generic "there's something" dot instead.
+    navigator.setAppBadge().catch(() => {});
+    return;
+  }
   navigator.setAppBadge(diff).catch(() => {});
 }
 
@@ -420,6 +451,16 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
   e.preventDefault();
   if (!form.checkValidity()) {
     form.reportValidity();
+    return;
+  }
+  // 2026-08-22 audit: HTML5 `required` only rejects a fully empty string --
+  // a whitespace-only name (e.g. a stray space) passes checkValidity() and
+  // was then trimmed down to "" at save time, producing a blank/invisible
+  // card with a broken aria-label.
+  if (!nameInput.value.trim()) {
+    nameInput.setCustomValidity("נא להזין שם אירוע");
+    form.reportValidity();
+    nameInput.setCustomValidity("");
     return;
   }
   const events = loadEvents();
@@ -446,7 +487,11 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
       isFavorite: makeFavorite,
     });
   }
-  saveEvents(events);
+  // 2026-08-22 audit: if storage itself failed (quota/private-browsing),
+  // don't pretend the save succeeded -- leave the dialog open so the user
+  // can see the "השמירה נכשלה" announcement and retry, instead of closing
+  // and re-rendering as if nothing happened.
+  if (!saveEvents(events)) return;
   dialog.close();
   render();
   refreshAppBadge();
@@ -494,7 +539,7 @@ deleteConfirmOkBtn.addEventListener("click", () => {
     return;
   }
   const events = loadEvents().filter((ev) => ev.id !== pendingDeleteId);
-  saveEvents(events);
+  if (!saveEvents(events)) return; // storage failed -- leave the confirm dialog open to retry
   deleteConfirmDialog.close(); // triggers the `close` listener above, clearing pendingDeleteId
   render();
   refreshAppBadge(); // the deleted event may have been the favorite
@@ -541,7 +586,11 @@ document.getElementById("presetsBtn").addEventListener("click", () => {
   presetsEmptyEl.hidden = validPresets.length > 0;
   for (const h of validPresets) {
     const li = document.createElement("li");
-    li.innerHTML = `<span>${h.emoji}</span><span class="p-name">${h.name}</span><span class="p-date">${formatHebrewDate(h.date)}</span>`;
+    // 2026-08-22 audit: holidays.js is a trusted static file today, but
+    // every other user-facing name in this app goes through escapeHtml()
+    // -- keep this one consistent so it doesn't become a real gap the day
+    // this content source ever changes (e.g. becomes fetched/remote).
+    li.innerHTML = `<span>${escapeHtml(h.emoji)}</span><span class="p-name">${escapeHtml(h.name)}</span><span class="p-date">${formatHebrewDate(h.date)}</span>`;
     // No role="button" here (unlike Hero/Compact Row, which are plain
     // divs with no prior semantics to lose): this is a real <li> in a
     // <ul>, and keeping the implicit listitem role lets a screen reader
@@ -551,9 +600,16 @@ document.getElementById("presetsBtn").addEventListener("click", () => {
     li.setAttribute("aria-label", `${h.name}, ${formatHebrewDate(h.date)}`);
     const addPreset = () => {
       const events = loadEvents();
+      // 2026-08-22 audit: nothing stopped the same holiday being added
+      // twice (e.g. tapping it again after reopening the dialog) --
+      // silently produced duplicate cards with no warning.
+      if (events.some((ev) => ev.name === h.name && ev.date === h.date)) {
+        presetsDialog.close();
+        return;
+      }
       const id = crypto.randomUUID();
       events.push({ id, name: h.name, date: h.date, emoji: h.emoji });
-      saveEvents(events);
+      if (!saveEvents(events)) return;
       presetsDialog.close();
       render();
       celebrateNewEvent(id);

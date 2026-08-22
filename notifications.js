@@ -337,6 +337,11 @@ async function showFallbackNotification(ev, diff) {
 let fallbackCheckInFlight = false;
 
 async function checkFallbackReminders() {
+  // 2026-08-22 audit: unlike every other entry point in this file, this
+  // one didn't check NOTIFICATIONS_ENABLED -- a tester who'd granted
+  // Notification permission before the feature was disabled would keep
+  // silently receiving reminders, contradicting the whole point of the flag.
+  if (!NOTIFICATIONS_ENABLED) return;
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   if (typeof loadEvents !== "function" || typeof daysUntil !== "function") return; // app.js not loaded yet somehow -- bail defensively
   if (fallbackCheckInFlight) return; // cold-start + a rapid visibilitychange could otherwise race on the same localStorage read/write
