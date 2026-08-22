@@ -530,6 +530,14 @@ button {
   min-height: 48px;
 }
 
+/* Same [hidden]-vs-display:flex specificity tie as .purchase-btn (see its
+   2026-08-22 note above) -- fixed proactively here since notifSettingsRow
+   is now hidden via JS (NOTIFICATIONS_ENABLED) and would hit the exact
+   same bug otherwise. */
+.settings-row[hidden] {
+  display: none;
+}
+
 .settings-row-label {
   /* Overrides the generic label rule's size (0.85rem->1rem), color
      (--text-secondary->--text-primary), and margin-top (->0) -- this is

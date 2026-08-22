@@ -1,6 +1,15 @@
 // Reminders (Epic 2). Loaded after app.js (AD-1) -- may reference its
 // globals (loadEvents, saveEvents) but never the reverse.
 
+// 2026-08-22, שי: הוחלט להשבית את פיצ'ר-התזכורות לגמרי אחרי דיווח-בודק/ת
+// שהתזכורת לא הגיעה. זו לא בעיית-קוד -- זו מגבלה ידועה ומתועדת של
+// Periodic Background Sync (AD-6, best-effort, תלוי ציון-מעורבות של
+// הדפדפן, לא push-שרת אמיתי) שקיימת מהתכנון המקורי. במקום להבטיח
+// פונקציונליות לא-אמינה, מסתירים את המתג ומפסיקים לבקש הרשאה/לרשום
+// sync עד שתיבנה תשתית-שרת אמיתית (שינוי-ארכיטקטורה נפרד, לא כאן).
+// דגל יחיד, לא תיקון-קוד פזור -- להחזיר ל-true כשיש פתרון אמין.
+const NOTIFICATIONS_ENABLED = false;
+
 // Story 2.1: minimal read-only-for-the-Service-Worker snapshot of events.
 // AD-2: localStorage stays the single source of truth for the page; the
 // Service Worker has no access to it at all, so this is its only way to
@@ -102,6 +111,7 @@ syncIndexedDBSnapshot(loadEvents());
 const NOTIF_PROMPT_SHOWN_KEY = "sofrim-yamim.notif-prompt-shown.v1";
 
 function maybeRequestNotificationPermission() {
+  if (!NOTIFICATIONS_ENABLED) return;
   try {
     if (localStorage.getItem(NOTIF_PROMPT_SHOWN_KEY)) return; // already attempted the request, ever -- FR-6: once only
     if (!("Notification" in window)) return; // unsupported context (e.g. some in-app browsers)
@@ -137,8 +147,14 @@ document.addEventListener("sofrim-yamim:event-added", maybeRequestNotificationPe
 // owns what's actually notification-specific: the toggle and its hint.
 const notifToggle = document.getElementById("notifToggle");
 const notifHint = document.getElementById("notifDeniedHint");
+const notifSettingsRow = document.getElementById("notifSettingsRow");
 
 function refreshSettingsDialog() {
+  if (!NOTIFICATIONS_ENABLED) {
+    if (notifSettingsRow) notifSettingsRow.hidden = true;
+    notifHint.hidden = true;
+    return;
+  }
   const supported = "Notification" in window;
   const permission = supported ? Notification.permission : null;
   notifToggle.checked = permission === "granted";
@@ -164,6 +180,7 @@ function refreshSettingsDialog() {
 document.addEventListener("sofrim-yamim:settings-opened", refreshSettingsDialog);
 
 notifToggle.addEventListener("change", () => {
+  if (!NOTIFICATIONS_ENABLED) return;
   if (!("Notification" in window)) {
     refreshSettingsDialog();
     return;
@@ -207,6 +224,7 @@ notifToggle.addEventListener("change", () => {
 const REMINDER_SYNC_TAG = "sofrim-yamim-reminders";
 
 async function registerPeriodicSync() {
+  if (!NOTIFICATIONS_ENABLED) return;
   if (!("serviceWorker" in navigator)) return;
   if (!("Notification" in window) || Notification.permission !== "granted") return; // no point without permission
   try {
