@@ -323,3 +323,14 @@ document.addEventListener("visibilitychange", async () => {
   refreshAdBanner();
   if (!purchaseInProgress) refreshPurchaseButton();
 });
+
+// 2026-08-22: עם NOTIFICATIONS_ENABLED (notifications.js) ו-
+// MONETIZATION_ENABLED (למעלה) שניהם false, דיאלוג ההגדרות התרוקן לגמרי
+// (רק כותרת + כפתור-סגירה) -- מסתירים את כפתור ⚙️ עצמו במקום להשאיר
+// דיאלוג-ריק. חי כאן (הקובץ האחרון בסדר-הטעינה, AD-1) כי זה הקובץ היחיד
+// שרואה את שני הדגלים; אם אחד מהם יחזור ל-true, הכפתור חוזר להופיע
+// אוטומטית -- אין דגל שלישי נפרד לשכוח.
+const settingsBtnEl = document.getElementById("settingsBtn");
+if (settingsBtnEl && !NOTIFICATIONS_ENABLED && !MONETIZATION_ENABLED) {
+  settingsBtnEl.hidden = true;
+}
