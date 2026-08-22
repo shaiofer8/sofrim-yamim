@@ -426,6 +426,32 @@ input, select {
   width: 100%;
 }
 
+/* 2026-08-22: favorite-toggle-row inside the add/edit event dialog --
+   lets a user pick one event whose day-count shows on the app icon
+   (Badging API, see app.js refreshAppBadge()). Plain checkbox+label, not
+   .settings-row's switch styling -- this lives inside a form, not the
+   Settings dialog, and doesn't need that component's own semantics. */
+.favorite-star {
+  font-size: 0.85em;
+  margin-inline-start: 2px;
+}
+
+.favorite-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.favorite-toggle-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  flex-shrink: 0;
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;

@@ -40,6 +40,7 @@ const dialogTitle = document.getElementById("dialogTitle");
 const nameInput = document.getElementById("eventName");
 const dateInput = document.getElementById("eventDate");
 const emojiInput = document.getElementById("eventEmoji");
+const favoriteInput = document.getElementById("eventFavorite");
 const deleteBtn = document.getElementById("deleteBtn");
 
 const presetsDialog = document.getElementById("presetsDialog");
@@ -121,7 +122,7 @@ function renderHero(ev) {
   heroEl.innerHTML = `
     <div class="hero-emoji">${ev.emoji}</div>
     <div class="hero-info">
-      <div class="hero-name">${escapeHtml(ev.name)}</div>
+      <div class="hero-name">${escapeHtml(ev.name)}${ev.isFavorite ? ' <span class="favorite-star" aria-label="מועדף">⭐</span>' : ""}</div>
       <div class="hero-date">${formatHebrewDate(ev.date)}</div>
     </div>
     <div class="hero-count">
@@ -171,7 +172,7 @@ function render() {
     card.innerHTML = `
       <div class="event-emoji">${ev.emoji}</div>
       <div class="event-info">
-        <div class="event-name">${escapeHtml(ev.name)}</div>
+        <div class="event-name">${escapeHtml(ev.name)}${ev.isFavorite ? ' <span class="favorite-star" aria-label="מועדף">⭐</span>' : ""}</div>
         <div class="event-date">${formatHebrewDate(ev.date)}</div>
       </div>
       <div class="event-count">
@@ -375,6 +376,7 @@ function openAddDialog() {
   dialogTitle.textContent = "אירוע חדש";
   form.reset();
   emojiInput.value = "🎉";
+  favoriteInput.checked = false;
   deleteBtn.hidden = true;
   dialog.showModal();
 }
@@ -385,8 +387,30 @@ function openEditDialog(ev) {
   nameInput.value = ev.name;
   dateInput.value = ev.date;
   emojiInput.value = ev.emoji;
+  favoriteInput.checked = !!ev.isFavorite;
   deleteBtn.hidden = false;
   dialog.showModal();
+}
+
+// 2026-08-22: המשתמש בוחר לכל היותר אירוע-מועדף אחד -- המספר שלו (ימים
+// עד האירוע) מוצג כ-badge על סמל האפליקציה (Badging API, תמיכת כרום
+// באנדרואיד ל-PWA/TWA מותקן). לא קשור ל-Hero Card (שתמיד מציג את הקרוב-
+// ביותר) -- זו בחירה ידנית ונפרדת, בדיוק כמו שביקש המשתמש.
+function refreshAppBadge() {
+  if (!("setAppBadge" in navigator)) return; // unsupported browser/context -- silent, matches AD-6's "never block" philosophy for best-effort platform APIs
+  const favorite = loadEvents().find((ev) => ev.isFavorite === true);
+  if (!favorite) {
+    navigator.clearAppBadge().catch(() => {});
+    return;
+  }
+  const diff = daysUntil(favorite.date);
+  if (diff < 0) {
+    // Event already passed -- a negative badge makes no sense; clear
+    // rather than show a stale/wrong number.
+    navigator.clearAppBadge().catch(() => {});
+    return;
+  }
+  navigator.setAppBadge(diff).catch(() => {});
 }
 
 document.getElementById("addBtn").addEventListener("click", openAddDialog);
@@ -401,10 +425,16 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
   const events = loadEvents();
   let newEventId = null;
   const editedId = editingId;
+  const makeFavorite = favoriteInput.checked;
+  // בלעדיות: אירוע-מועדף אחד לכל היותר -- אם זה נבחר כמועדף, מנקים את
+  // הדגל מכל השאר קודם (לא אחרי, כדי שלא "יתחרו" רגעית עם שני מועדפים).
+  if (makeFavorite) {
+    for (const ev of events) ev.isFavorite = false;
+  }
   if (editingId) {
     const idx = events.findIndex((ev) => ev.id === editingId);
     if (idx !== -1) {
-      events[idx] = { ...events[idx], name: nameInput.value.trim(), date: dateInput.value, emoji: emojiInput.value };
+      events[idx] = { ...events[idx], name: nameInput.value.trim(), date: dateInput.value, emoji: emojiInput.value, isFavorite: makeFavorite };
     }
   } else {
     newEventId = crypto.randomUUID();
@@ -413,11 +443,13 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
       name: nameInput.value.trim(),
       date: dateInput.value,
       emoji: emojiInput.value,
+      isFavorite: makeFavorite,
     });
   }
   saveEvents(events);
   dialog.close();
   render();
+  refreshAppBadge();
   if (newEventId) {
     celebrateNewEvent(newEventId);
     dispatchEventAdded(newEventId); // Story 2.2 hooks in on this; only fires on a genuinely new event, never an edit
@@ -465,6 +497,7 @@ deleteConfirmOkBtn.addEventListener("click", () => {
   saveEvents(events);
   deleteConfirmDialog.close(); // triggers the `close` listener above, clearing pendingDeleteId
   render();
+  refreshAppBadge(); // the deleted event may have been the favorite
   document.getElementById("addBtn").focus();
   announce("האירוע נמחק.");
 });
@@ -564,6 +597,7 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
 closeSettingsBtnEl.addEventListener("click", () => settingsDialogEl.close());
 
 render();
+refreshAppBadge(); // cold start: reflect whatever favorite (if any) was already saved
 
 // PWA: register service worker
 if ("serviceWorker" in navigator) {
