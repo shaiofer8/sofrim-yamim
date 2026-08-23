@@ -127,6 +127,16 @@
     </button>
     <p id="purchaseError" class="presets-hint" role="alert" hidden></p>
 
+    <!-- כפתור שיתוף -- navigator.share() כשקיים (מובייל/TWA), נופל חזרה
+         להעתקת-קישור ל-clipboard בדפדפן שולחני שלא תומך ב-Web Share API
+         (ר' app.js, ליד רישום כפתורי דיאלוג-ההגדרות). המשוב על ה-fallback
+         עובר דרך #liveStatus הקיים (announce()), אין צורך באלמנט נפרד. -->
+    <button type="button" id="shareAppBtn" class="btn-secondary">שיתוף האפליקציה</button>
+
+    <!-- יצירת קשר בוואטסאפ -- קישור wa.me רגיל, לא תלוי-JS. ⚠️ PLACEHOLDER
+         מספר טלפון -- יש להחליף לפני פרסום. -->
+    <a id="contactWhatsappLink" class="btn-secondary" href="https://wa.me/000000000000" target="_blank" rel="noopener noreferrer">יצירת קשר בוואטסאפ</a>
+
     <div class="dialog-actions">
       <button type="button" id="closeSettingsBtn" class="btn-secondary">סגירה</button>
     </div>

@@ -652,6 +652,44 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
 });
 closeSettingsBtnEl.addEventListener("click", () => settingsDialogEl.close());
 
+// כפתור שיתוף -- navigator.share() הוא הנתיב הראשי (פותח את ה-share sheet
+// המקורי של המערכת, כולל WhatsApp/SMS/מייל וכו' -- ההתנהגות הרצויה על
+// מובייל/TWA). לא קיים בהרבה דפדפני-שולחני, אז יש נפילה-חזרה להעתקת
+// הקישור ל-clipboard (מכריזה דרך announce()/#liveStatus הקיים); אם גם
+// ה-Clipboard API חסום, window.prompt הוא המפלט האחרון -- לפחות מציג את
+// הקישור לבחירה/העתקה ידנית, לא נכשל בשקט.
+const shareAppBtnEl = document.getElementById("shareAppBtn");
+if (shareAppBtnEl) {
+  shareAppBtnEl.addEventListener("click", async () => {
+    const shareData = {
+      title: document.title,
+      text: "סופרים ימים — ספירה לאחור לאירועים, חגים ומועדים",
+      url: location.origin + location.pathname,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // AbortError = המשתמש סגר את ה-share sheet בעצמו -- לא כשל.
+        if (err && err.name !== "AbortError") {
+          console.error("שיתוף נכשל", err);
+        }
+      }
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(shareData.url);
+        announce("הקישור לאפליקציה הועתק");
+        return;
+      } catch (err) {
+        // ממשיך למפלט prompt() למטה.
+      }
+    }
+    window.prompt("העתיקו את הקישור לאפליקציה:", shareData.url);
+  });
+}
+
 render();
 refreshAppBadge(); // cold start: reflect whatever favorite (if any) was already saved
 

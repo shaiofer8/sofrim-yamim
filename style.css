@@ -477,6 +477,18 @@ button {
   cursor: pointer;
 }
 
+/* .btn-secondary is also used on the WhatsApp contact <a> (a real link,
+   not a <button>, so it works even if app.js fails to load) -- these two
+   rules make it look/center identically to the button variants, since an
+   <a> has none of a <button>'s UA-default centering/no-underline. */
+a.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
 .btn-primary {
   /* Story 3.2: same white-on-gradient contrast failure Story 1.4 found
      and fixed for .app-header (white on raw accent-pink measures ~2.9:1,
