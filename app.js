@@ -43,6 +43,16 @@ const emojiInput = document.getElementById("eventEmoji");
 const favoriteInput = document.getElementById("eventFavorite");
 const deleteBtn = document.getElementById("deleteBtn");
 
+// 2026-08-23: קלט תאריך עברי -- ר' initHebrewDatePicker() למטה.
+const dateModeGregorianBtn = document.getElementById("dateModeGregorianBtn");
+const dateModeHebrewBtn = document.getElementById("dateModeHebrewBtn");
+const gregorianDateField = document.getElementById("gregorianDateField");
+const hebrewDateField = document.getElementById("hebrewDateField");
+const hebrewDaySelect = document.getElementById("hebrewDay");
+const hebrewMonthSelect = document.getElementById("hebrewMonth");
+const hebrewYearSelect = document.getElementById("hebrewYear");
+const hebrewDatePreview = document.getElementById("hebrewDatePreview");
+
 const presetsDialog = document.getElementById("presetsDialog");
 const presetsList = document.getElementById("presetsList");
 const presetsEmptyEl = document.getElementById("presetsEmpty");
@@ -393,6 +403,113 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// 2026-08-23: קלט תאריך עברי -- כל ההמרה/החיפוש (Hebrew<->Gregorian) חיה
+// ב-hebrew-date.js (window.HebrewDate); כל מה שקורה כאן הוא ניהול ה-UI
+// בלבד, ותמיד דואג ש-#eventDate ישקף את הבחירה הנוכחית -- זה נשאר מקור-
+// האמת היחיד שנשמר/נספר, בשני המצבים (ר' ההערה ב-index.html ליד השדה).
+let dateInputMode = "gregorian";
+
+function populateHebrewYearSelect(selectedYear) {
+  const todayHebrewYear = HebrewDate.gregorianToHebrewYMD(new Date()).year;
+  hebrewYearSelect.innerHTML = "";
+  // טווח סביר: שנה עברית נוכחית -1 עד +10 -- מכסה את רוב מקרי-השימוש
+  // (ימי הולדת, אירועים אישיים) בלי רשימה אינסופית לגלול בה.
+  for (let y = todayHebrewYear - 1; y <= todayHebrewYear + 10; y++) {
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = HebrewDate.toHebrewNumeral(y % 1000);
+    hebrewYearSelect.appendChild(opt);
+  }
+  hebrewYearSelect.value = String(selectedYear);
+}
+
+function populateHebrewMonthSelect(hebrewYear, selectedMonthName) {
+  const table = HebrewDate.buildHebrewYearTable(hebrewYear);
+  hebrewMonthSelect.innerHTML = "";
+  for (const month of table.months) {
+    const opt = document.createElement("option");
+    opt.value = month.name;
+    opt.textContent = month.name;
+    hebrewMonthSelect.appendChild(opt);
+  }
+  const hasSelected = table.months.some((m) => m.name === selectedMonthName);
+  hebrewMonthSelect.value = hasSelected ? selectedMonthName : table.months[0].name;
+}
+
+function populateHebrewDaySelect(hebrewYear, monthName, selectedDay) {
+  const table = HebrewDate.buildHebrewYearTable(hebrewYear);
+  const month = table.months.find((m) => m.name === monthName) || table.months[0];
+  hebrewDaySelect.innerHTML = "";
+  for (let d = 1; d <= month.days; d++) {
+    const opt = document.createElement("option");
+    opt.value = String(d);
+    opt.textContent = HebrewDate.toHebrewNumeral(d);
+    hebrewDaySelect.appendChild(opt);
+  }
+  // חודש שהתחלף עלול להיות קצר יותר (29 במקום 30 ימים) -- הצמדה ליום
+  // האחרון הקיים במקום להשאיר בחירה לא-תקפה שלא קיימת ברשימה.
+  hebrewDaySelect.value = String(Math.min(selectedDay || 1, month.days));
+}
+
+// #eventDate הוא היעד היחיד -- שלוש הבחירות העבריות רק מחשבות מה להכניס
+// לתוכו, בדיוק כמו קלט לועזי ידני.
+function syncEventDateFromHebrewSelects() {
+  const year = Number(hebrewYearSelect.value);
+  const month = hebrewMonthSelect.value;
+  const day = Number(hebrewDaySelect.value);
+  const iso = HebrewDate.hebrewToGregorianISO(year, month, day);
+  if (!iso) return; // לא אמור לקרות -- כל שלוש הרשימות תמיד נבנות מאותה טבלה
+  dateInput.value = iso;
+  // formatHebrewDate() (למרות השם) מציגה תאריך *לועזי* בעברית -- בדיוק מה
+  // שרוצים כאן: שקיפות על מה שנשמר בפועל "מאחורי הקלעים".
+  hebrewDatePreview.textContent = `בלועזי: ${formatHebrewDate(iso)}`;
+}
+
+// שולף Hebrew y/m/d מהערך הנוכחי של #eventDate -- בין אם המשתמש הזין
+// אותו בעצמו במצב לועזי, ובין אם זה תאריך שכבר נשמר בעריכה -- כך מעבר בין
+// שני המצבים תמיד נשאר עקבי לשני הכיוונים, אף פעם לא "שוכח" תאריך קיים.
+// שדה ריק (דיאלוג-הוספה חדש, לפני שנבחר תאריך לועזי) נופל לתאריך היום.
+function seedHebrewFieldsFromEventDate() {
+  const current = dateInput.value ? new Date(dateInput.value + "T00:00:00") : new Date();
+  const ymd = HebrewDate.gregorianToHebrewYMD(current);
+  populateHebrewYearSelect(ymd.year);
+  populateHebrewMonthSelect(ymd.year, ymd.month);
+  populateHebrewDaySelect(ymd.year, ymd.month, ymd.day);
+  syncEventDateFromHebrewSelects();
+}
+
+function setDateMode(mode) {
+  dateInputMode = mode;
+  const isHebrew = mode === "hebrew";
+  dateModeHebrewBtn.setAttribute("aria-checked", String(isHebrew));
+  dateModeGregorianBtn.setAttribute("aria-checked", String(!isHebrew));
+  dateModeHebrewBtn.classList.toggle("active", isHebrew);
+  dateModeGregorianBtn.classList.toggle("active", !isHebrew);
+  hebrewDateField.hidden = !isHebrew;
+  gregorianDateField.hidden = isHebrew;
+  if (isHebrew) {
+    seedHebrewFieldsFromEventDate();
+  }
+}
+
+dateModeGregorianBtn.addEventListener("click", () => setDateMode("gregorian"));
+dateModeHebrewBtn.addEventListener("click", () => setDateMode("hebrew"));
+
+hebrewYearSelect.addEventListener("change", () => {
+  const year = Number(hebrewYearSelect.value);
+  populateHebrewMonthSelect(year, hebrewMonthSelect.value);
+  populateHebrewDaySelect(year, hebrewMonthSelect.value, Number(hebrewDaySelect.value));
+  syncEventDateFromHebrewSelects();
+});
+
+hebrewMonthSelect.addEventListener("change", () => {
+  const year = Number(hebrewYearSelect.value);
+  populateHebrewDaySelect(year, hebrewMonthSelect.value, Number(hebrewDaySelect.value));
+  syncEventDateFromHebrewSelects();
+});
+
+hebrewDaySelect.addEventListener("change", syncEventDateFromHebrewSelects);
+
 function openAddDialog() {
   editingId = null;
   dialogTitle.textContent = "אירוע חדש";
@@ -400,6 +517,7 @@ function openAddDialog() {
   emojiInput.value = "🎉";
   favoriteInput.checked = false;
   deleteBtn.hidden = true;
+  setDateMode("gregorian"); // תמיד מתחיל לועזי -- form.reset() כבר ניקה את eventDate
   dialog.showModal();
 }
 
@@ -411,6 +529,10 @@ function openEditDialog(ev) {
   emojiInput.value = ev.emoji;
   favoriteInput.checked = !!ev.isFavorite;
   deleteBtn.hidden = false;
+  // אירוע שנשמר במצב עברי חוזר לאותו מצב בעריכה (מה-y/m/d העברי הנגזר
+  // מ-ev.date, לא נשמר בנפרד); אירועים ישנים בלי dateInputMode (מלפני
+  // התכונה הזו) נופלים לברירת-המחדל הלועזית, בדיוק כמו שהיו קודם.
+  setDateMode(ev.dateInputMode === "hebrew" ? "hebrew" : "gregorian");
   dialog.showModal();
 }
 
@@ -475,7 +597,7 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
   if (editingId) {
     const idx = events.findIndex((ev) => ev.id === editingId);
     if (idx !== -1) {
-      events[idx] = { ...events[idx], name: nameInput.value.trim(), date: dateInput.value, emoji: emojiInput.value, isFavorite: makeFavorite };
+      events[idx] = { ...events[idx], name: nameInput.value.trim(), date: dateInput.value, emoji: emojiInput.value, isFavorite: makeFavorite, dateInputMode };
     }
   } else {
     newEventId = crypto.randomUUID();
@@ -485,6 +607,7 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
       date: dateInput.value,
       emoji: emojiInput.value,
       isFavorite: makeFavorite,
+      dateInputMode,
     });
   }
   // 2026-08-22 audit: if storage itself failed (quota/private-browsing),

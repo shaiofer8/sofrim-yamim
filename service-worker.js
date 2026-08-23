@@ -1,4 +1,4 @@
-const CACHE_NAME = "sofrim-yamim-v37";
+const CACHE_NAME = "sofrim-yamim-v38";
 // Relative (no leading "/"): resolved against this file's own location, so
 // this works whether the app is deployed at a domain root or under a
 // subpath (e.g. a GitHub Pages project site at /sofrim-yamim/) without any
@@ -10,6 +10,7 @@ const ASSETS = [
   "./style.css",
   "./app.js",
   "./holidays.js",
+  "./hebrew-date.js",
   "./notifications.js",
   "./billing.js",
   "./manifest.json",

@@ -66,8 +66,31 @@
     <label for="eventName">שם האירוע</label>
     <input id="eventName" type="text" required placeholder="לדוגמה: יום הולדת לאמא">
 
-    <label for="eventDate">תאריך</label>
-    <input id="eventDate" type="date" required>
+    <!-- 2026-08-23: בחירת תאריך עברי -- toggle בין קלט לועזי (ברירת מחדל,
+         זהה למה שהיה) לקלט עברי (יום/חודש/שנה, ר' hebrew-date.js). בשני
+         המצבים #eventDate נשאר מקור-האמת היחיד שנשמר/נספר (עקבי עם AD-2 --
+         אין מקור-אמת כפול) -- הבחירה העברית רק ממלאת אותו דרך
+         initHebrewDatePicker() ב-app.js, אף קוד שמירה/ספירה/רינדור אחר לא
+         צריך לדעת שהמצב הזה קיים בכלל. -->
+    <div class="date-mode-toggle" role="radiogroup" aria-label="סוג תאריך">
+      <button type="button" id="dateModeGregorianBtn" class="date-mode-btn" role="radio" aria-checked="true">לועזי</button>
+      <button type="button" id="dateModeHebrewBtn" class="date-mode-btn" role="radio" aria-checked="false">עברי</button>
+    </div>
+
+    <div id="gregorianDateField">
+      <label for="eventDate">תאריך</label>
+      <input id="eventDate" type="date" required>
+    </div>
+
+    <div id="hebrewDateField" hidden>
+      <label id="hebrewDateLabel">תאריך עברי</label>
+      <div class="hebrew-date-row" role="group" aria-labelledby="hebrewDateLabel">
+        <select id="hebrewDay" aria-label="יום בחודש"></select>
+        <select id="hebrewMonth" aria-label="חודש עברי"></select>
+        <select id="hebrewYear" aria-label="שנה עברית"></select>
+      </div>
+      <p id="hebrewDatePreview" class="presets-hint" aria-live="polite"></p>
+    </div>
 
     <label for="eventEmoji">אייקון</label>
     <select id="eventEmoji">
@@ -189,6 +212,7 @@
 </div>
 
 <script src="holidays.js"></script>
+<script src="hebrew-date.js"></script>
 <script src="app.js"></script>
 <script src="notifications.js"></script>
 <script src="billing.js"></script>
