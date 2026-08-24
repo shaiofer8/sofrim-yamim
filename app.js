@@ -42,6 +42,7 @@ const dateInput = document.getElementById("eventDate");
 const emojiInput = document.getElementById("eventEmoji");
 const favoriteInput = document.getElementById("eventFavorite");
 const deleteBtn = document.getElementById("deleteBtn");
+const calendarBtn = document.getElementById("calendarBtn");
 
 // 2026-08-23: קלט תאריך עברי -- ר' initHebrewDatePicker() למטה.
 const dateModeGregorianBtn = document.getElementById("dateModeGregorianBtn");
@@ -517,6 +518,7 @@ function openAddDialog() {
   emojiInput.value = "🎉";
   favoriteInput.checked = false;
   deleteBtn.hidden = true;
+  calendarBtn.hidden = true; // FR: יומן -- רק לאירוע שכבר קיים (יש לו id יציב ל-UID)
   setDateMode("gregorian"); // תמיד מתחיל לועזי -- form.reset() כבר ניקה את eventDate
   dialog.showModal();
 }
@@ -529,6 +531,7 @@ function openEditDialog(ev) {
   emojiInput.value = ev.emoji;
   favoriteInput.checked = !!ev.isFavorite;
   deleteBtn.hidden = false;
+  calendarBtn.hidden = false;
   // אירוע שנשמר במצב עברי חוזר לאותו מצב בעריכה (מה-y/m/d העברי הנגזר
   // מ-ev.date, לא נשמר בנפרד); אירועים ישנים בלי dateInputMode (מלפני
   // התכונה הזו) נופלים לברירת-המחדל הלועזית, בדיוק כמו שהיו קודם.
@@ -642,6 +645,92 @@ deleteBtn.addEventListener("click", () => {
   const id = editingId;
   dialog.close();
   openDeleteConfirm({ id, name });
+});
+
+// "הוסף ליומן" -- AD-6 קובע שהתראות בתוך האפליקציה הן best-effort בלבד
+// (Periodic Background Sync, בוטל ב-2026-08-22 בגלל אי-אמינות). קובץ .ics
+// עוקף את הבעיה כליל: מוסיף את האירוע ליומן האמיתי של המכשיר, עם תזכורת
+// (VALARM) יום לפני -- אמין ב-100% כי אפליקציית היומן (לא אנחנו) אחראית
+// על ההתראה בפועל, ועדיין בלי שרת ובלי נתון שעוזב את המכשיר (AD-3):
+// ה-.ics נבנה ומורד כולו בצד הלקוח.
+function escapeIcsText(s) {
+  return String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+}
+
+function toIcsDateCompact(d) {
+  // 'YYYY-MM-DD' -> 'YYYYMMDD' (VALUE=DATE, כמו holidays/app.js -- תמיד
+  // מחרוזת מקומית, לעולם לא Date/UTC, ר' Consistency Conventions)
+  return d.replaceAll("-", "");
+}
+
+// בונה מחרוזת 'YYYY-MM-DD' מקומית מ-Date -- לא toISOString() (UTC, יכול
+// להזיז יום סביב חצות/אזור זמן ישראל, אותה מלכודת שכבר תועדה ב-
+// hebrew-date.js).
+function dateToIsoLocal(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function buildIcsForEvent(ev) {
+  const startCompact = toIcsDateCompact(ev.date);
+  // DTEND ל"כל היום" הוא בלעדי (exclusive) לפי RFC 5545 -- חייב להיות יום
+  // *אחרי* התאריך עצמו, אחרת יומנים מציגים אירוע באורך אפס.
+  const endDate = new Date(ev.date + "T00:00:00");
+  endDate.setDate(endDate.getDate() + 1);
+  const endCompact = toIcsDateCompact(dateToIsoLocal(endDate));
+
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const dtStamp =
+    `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T` +
+    `${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
+
+  const summary = escapeIcsText(ev.name);
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Sofrim Yamim//he",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    `UID:${ev.id}@sofrimyamim.com`,
+    `DTSTAMP:${dtStamp}`,
+    `DTSTART;VALUE=DATE:${startCompact}`,
+    `DTEND;VALUE=DATE:${endCompact}`,
+    `SUMMARY:${summary}`,
+    "BEGIN:VALARM",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${summary}`,
+    "TRIGGER:-P1D", // תזכורת יום לפני -- ברירת מחדל סבירה, כל יומן מציג/מאפשר לשנות בעצמו
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+function downloadIcs(ev) {
+  const ics = buildIcsForEvent(ev);
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${ev.name || "אירוע"}.ics`.replace(/[\\/:*?"<>|]/g, "_");
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // ה-download עצמו קורא את ה-Blob באופן סינכרוני מספיק תמיד בפועל, אבל
+  // revoke אחרי tick אחד (ולא מיידית) כדי לא לפגוע בדפדפנים איטיים יותר.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+calendarBtn.addEventListener("click", () => {
+  if (!editingId) return;
+  const ev = loadEvents().find((e) => e.id === editingId);
+  if (!ev) return;
+  downloadIcs(ev);
+  announce("קובץ יומן הורד.");
 });
 
 // Reset on the dialog's own `close` event (fires for every close path --
