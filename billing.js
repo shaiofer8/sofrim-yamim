@@ -7,7 +7,7 @@
 // למרות שאין עדיין AdSense אמיתי -- שני מנגנונים נפרדים). המטרה: פונקציונליות
 // מלאה וחינמית לבודקים בשלב הזה, בלי שום משטח-מונטיזציה גלוי. דגל יחיד,
 // לא תיקון-קוד פזור -- להחזיר ל-true כשרוצים להפעיל מונטיזציה מחדש.
-const MONETIZATION_ENABLED = true;
+const MONETIZATION_ENABLED = false;
 
 // AD-4: purchase state lives in its own dedicated localStorage key, never
 // mixed into the events key. Shape (locked by AD-4, keep as-is):
