@@ -1,13 +1,10 @@
 // Monetization (Epic 3). Loaded last (AD-1) -- may reference globals
 // defined in app.js/notifications.js, never the reverse.
 
-// 2026-08-22, שי: הוחלט להשבית מונטיזציה לגמרי בזמן בדיקות-הבודקים --
-// גם באנר הפרסומות (ממילא מוסתר כרגע, ר' isPlaceholderAdClient למטה) וגם
-// כפתור הרכישה (שכן מוצג בפועל בטלפון אמיתי דרך Digital Goods API,
-// למרות שאין עדיין AdSense אמיתי -- שני מנגנונים נפרדים). המטרה: פונקציונליות
-// מלאה וחינמית לבודקים בשלב הזה, בלי שום משטח-מונטיזציה גלוי. דגל יחיד,
-// לא תיקון-קוד פזור -- להחזיר ל-true כשרוצים להפעיל מונטיזציה מחדש.
-const MONETIZATION_ENABLED = false;
+// 2026-10-03, שי: הופעלה מונטיזציה בפרודקשן -- בנרים בהתאמה
+// (Sofrim: ca-app-pub-4066391446449273/1489527205, Muzika: ca-app-pub-4066391446449273/6123655216)
+// בתוספת כפתור הרכישה דרך Digital Goods API בתוך Google Play.
+const MONETIZATION_ENABLED = true;
 
 // AD-4: purchase state lives in its own dedicated localStorage key, never
 // mixed into the events key. Shape (locked by AD-4, keep as-is):
@@ -30,7 +27,7 @@ if (MONETIZATION_ENABLED) {
   const adsenseScript = document.createElement("script");
   adsenseScript.async = true;
   adsenseScript.crossOrigin = "anonymous";
-  adsenseScript.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000";
+  adsenseScript.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-app-pub-4066391446449273";
   document.head.appendChild(adsenseScript);
 }
 
