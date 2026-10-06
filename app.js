@@ -933,25 +933,33 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+function updateLanguageUI() {
+  // Update button states
+  updateLanguageButtons();
+
+  // Update aria-labels and content
+  const settingsBtn = document.getElementById("settingsBtn");
+  const presetsBtn = document.getElementById("presetsBtn");
+  const addBtn = document.getElementById("addBtn");
+  const emptyEl = document.getElementById("emptyState");
+
+  if (settingsBtn) settingsBtn.setAttribute("aria-label", t("header.settings"));
+  if (presetsBtn) presetsBtn.setAttribute("aria-label", t("header.holidays"));
+  if (addBtn) addBtn.setAttribute("aria-label", t("header.add"));
+  if (emptyEl) emptyEl.textContent = t("main.empty");
+}
+
 function updateLanguageButtons() {
   const lang = getLanguage();
   const langHebrewBtn = document.getElementById("langHebrewBtn");
   const langEnglishBtn = document.getElementById("langEnglishBtn");
 
   if (langHebrewBtn) {
-    if (lang === "he") {
-      langHebrewBtn.classList.add("lang-btn-selected");
-    } else {
-      langHebrewBtn.classList.remove("lang-btn-selected");
-    }
+    langHebrewBtn.classList.toggle("lang-btn-selected", lang === "he");
   }
 
   if (langEnglishBtn) {
-    if (lang === "en") {
-      langEnglishBtn.classList.add("lang-btn-selected");
-    } else {
-      langEnglishBtn.classList.remove("lang-btn-selected");
-    }
+    langEnglishBtn.classList.toggle("lang-btn-selected", lang === "en");
   }
 }
 
