@@ -1,10 +1,20 @@
 const STORAGE_KEY = "sofrim-yamim.events.v1";
 const REFERRAL_CODE_KEY = "sofrim_referral_code";
+const USER_ID_KEY = "sofrim-user-id";
+
+function getOrCreateUserId() {
+  let userId = localStorage.getItem(USER_ID_KEY);
+  if (!userId) {
+    userId = "user_" + crypto.randomUUID().substring(0, 12);
+    localStorage.setItem(USER_ID_KEY, userId);
+  }
+  return userId;
+}
 
 function getOrCreateReferralCode() {
   let code = localStorage.getItem(REFERRAL_CODE_KEY);
   if (!code) {
-    const userId = localStorage.getItem("sofrim-user-id") || "anonymous";
+    const userId = getOrCreateUserId();
     code = "ref_" + btoa(userId);
     localStorage.setItem(REFERRAL_CODE_KEY, code);
   }
@@ -888,13 +898,14 @@ closeSettingsBtnEl.addEventListener("click", () => settingsDialogEl.close());
 // Share button (header) - referral system
 document.getElementById("shareBtn").addEventListener("click", async () => {
   const referralCode = getOrCreateReferralCode();
+  const userId = getOrCreateUserId();
   const shareUrl = `https://sofrim.app/?ref=${referralCode}`;
   const shareText = t("referral.shareText");
 
   if (navigator.share) {
     try {
       if (typeof gtag !== "undefined") {
-        gtag("event", "referral_share_initiated", { referral_code: referralCode, timestamp: new Date().toISOString() });
+        gtag("event", "referral_share_initiated", { user_id: userId, timestamp: new Date().toISOString() });
       }
       await navigator.share({ title: t("app.title"), text: shareText, url: shareUrl });
     } catch (err) {
