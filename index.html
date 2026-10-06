@@ -17,6 +17,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="סופרים ימים">
 <link rel="stylesheet" href="style.css">
+<script src="i18n.js"></script>
 <!--
   Story 3.1 / AD-5: Google AdSense web tag (NOT AdMob native SDK).
   ⚠️ PLACEHOLDER CLIENT ID -- replace ca-pub-0000000000000000 in billing.js
@@ -162,6 +163,15 @@
          (ר' app.js, ליד רישום כפתורי דיאלוג-ההגדרות). המשוב על ה-fallback
          עובר דרך #liveStatus הקיים (announce()), אין צורך באלמנט נפרד. -->
     <button type="button" id="shareAppBtn" class="btn-secondary">שיתוף האפליקציה</button>
+
+    <!-- Language selector -->
+    <div class="settings-row">
+      <label class="settings-row-label">שפה</label>
+      <div class="language-buttons">
+        <button type="button" id="langHebrewBtn" class="btn-secondary lang-btn lang-btn-selected">עברית</button>
+        <button type="button" id="langEnglishBtn" class="btn-secondary lang-btn">English</button>
+      </div>
+    </div>
 
     <!-- יצירת קשר בוואטסאפ -- קישור wa.me רגיל, לא תלוי-JS. מספר הטלפון
          ניתן ע"י המשתמש (2026-08-23) -- אותו מספר נמצא בשימוש בשתי

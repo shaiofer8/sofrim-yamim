@@ -905,6 +905,56 @@ if (shareAppBtnEl) {
 render();
 refreshAppBadge(); // cold start: reflect whatever favorite (if any) was already saved
 
+// Language selection (i18n)
+document.addEventListener("DOMContentLoaded", () => {
+  const langHebrewBtn = document.getElementById("langHebrewBtn");
+  const langEnglishBtn = document.getElementById("langEnglishBtn");
+
+  if (langHebrewBtn && langEnglishBtn) {
+    langHebrewBtn.addEventListener("click", () => {
+      setLanguage("he");
+      updateLanguageButtons();
+      render(); // Re-render with new language
+    });
+
+    langEnglishBtn.addEventListener("click", () => {
+      setLanguage("en");
+      updateLanguageButtons();
+      render(); // Re-render with new language
+    });
+
+    // Set initial button state
+    updateLanguageButtons();
+  }
+
+  // Listen for language changes from other tabs/windows
+  document.addEventListener("sofrim:language-changed", () => {
+    render();
+  });
+});
+
+function updateLanguageButtons() {
+  const lang = getLanguage();
+  const langHebrewBtn = document.getElementById("langHebrewBtn");
+  const langEnglishBtn = document.getElementById("langEnglishBtn");
+
+  if (langHebrewBtn) {
+    if (lang === "he") {
+      langHebrewBtn.classList.add("lang-btn-selected");
+    } else {
+      langHebrewBtn.classList.remove("lang-btn-selected");
+    }
+  }
+
+  if (langEnglishBtn) {
+    if (lang === "en") {
+      langEnglishBtn.classList.add("lang-btn-selected");
+    } else {
+      langEnglishBtn.classList.remove("lang-btn-selected");
+    }
+  }
+}
+
 // PWA: register service worker
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
