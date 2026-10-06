@@ -1,4 +1,25 @@
 const STORAGE_KEY = "sofrim-yamim.events.v1";
+const REFERRAL_CODE_KEY = "sofrim_referral_code";
+
+function getOrCreateReferralCode() {
+  let code = localStorage.getItem(REFERRAL_CODE_KEY);
+  if (!code) {
+    const userId = localStorage.getItem("sofrim-user-id") || "anonymous";
+    code = "ref_" + btoa(userId);
+    localStorage.setItem(REFERRAL_CODE_KEY, code);
+  }
+  return code;
+}
+
+// Referral deep link handler - log GA4 event on app init with ?ref= param
+function handleReferralDeepLink() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const refCode = urlParams.get("ref");
+  if (refCode && typeof gtag !== "undefined") {
+    gtag("event", "referral_link_opened", { referrer_user_id: refCode, timestamp: new Date().toISOString() });
+  }
+}
+handleReferralDeepLink();
 
 const listEl = document.getElementById("eventList");
 const emptyEl = document.getElementById("emptyState");
@@ -863,6 +884,26 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
   closeSettingsBtnEl.focus();
 });
 closeSettingsBtnEl.addEventListener("click", () => settingsDialogEl.close());
+
+// Share button (header) - referral system
+document.getElementById("shareBtn").addEventListener("click", async () => {
+  const referralCode = getOrCreateReferralCode();
+  const shareUrl = `https://sofrim.app/?ref=${referralCode}`;
+  const shareText = t("referral.shareText");
+
+  if (navigator.share) {
+    try {
+      if (typeof gtag !== "undefined") {
+        gtag("event", "referral_share_initiated", { referral_code: referralCode, timestamp: new Date().toISOString() });
+      }
+      await navigator.share({ title: t("app.title"), text: shareText, url: shareUrl });
+    } catch (err) {
+      if (err && err.name !== "AbortError") console.error("Share failed", err);
+    }
+  } else {
+    window.prompt("Share this link:", shareUrl);
+  }
+});
 
 // כפתור שיתוף -- navigator.share() הוא הנתיב הראשי (פותח את ה-share sheet
 // המקורי של המערכת, כולל WhatsApp/SMS/מייל וכו' -- ההתנהגות הרצויה על

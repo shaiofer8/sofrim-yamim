@@ -81,6 +81,9 @@ const i18nData = {
     "holiday.passover": "פסח",
     "holiday.shavuot": "שבועות",
     "holiday.tishaBav": "תשעה באב",
+
+    // Referral
+    "referral.shareText": "בואו לקרוא ספרים בסופרים ימים!",
   },
   en: {
     // App strings
@@ -161,6 +164,9 @@ const i18nData = {
     "holiday.passover": "Passover",
     "holiday.shavuot": "Shavuot",
     "holiday.tishaBav": "Tisha B'Av",
+
+    // Referral
+    "referral.shareText": "Check out Sofrim Yamim for awesome books!",
   }
 };
 
