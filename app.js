@@ -70,6 +70,11 @@ const form = document.getElementById("eventForm");
 const dialogTitle = document.getElementById("dialogTitle");
 const nameInput = document.getElementById("eventName");
 const dateInput = document.getElementById("eventDate");
+dateInput.addEventListener("click", () => {
+  if (typeof dateInput.showPicker === "function") {
+    try { dateInput.showPicker(); } catch (err) { /* הדפדפן חוסם -- נשארים עם השדה הרגיל */ }
+  }
+});
 const emojiInput = document.getElementById("eventEmoji");
 const favoriteInput = document.getElementById("eventFavorite");
 const deleteBtn = document.getElementById("deleteBtn");
