@@ -143,6 +143,34 @@ body {
   cursor: pointer;
 }
 
+/* Labeled header buttons: icon + short text, so their purpose is clear.
+   Sized down from 48px so four of them still fit beside the title on a 360px phone. */
+.btn-labeled {
+  width: 44px;
+  height: 52px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+}
+
+.btn-label {
+  font-size: 0.6rem;
+  line-height: 1;
+  color: #fff;
+}
+
+/* The AdSense unit stays hidden until Google actually fills it, so no empty white bar shows. */
+.ad-banner {
+  display: none;
+}
+
+.ad-banner:has(ins[data-ad-status="filled"]) {
+  display: block;
+}
+
 .fab {
   /* 48px: minimum 48dp touch target (Story 1.5), not the 42px original */
   width: 48px;
