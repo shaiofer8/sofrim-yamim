@@ -165,19 +165,20 @@ function refreshSettingsDialog() {
   // real prompt). The other three all need a sentence, not just silence.
   if (!supported) {
     notifHint.hidden = false;
-    notifHint.textContent = "התראות אינן נתמכות בדפדפן הזה.";
+    notifHint.textContent = t("notif.unsupported");
   } else if (permission === "denied") {
     notifHint.hidden = false;
-    notifHint.textContent = "יש לאשר התראות בהגדרות הדפדפן או המכשיר.";
+    notifHint.textContent = t("notif.denied");
   } else if (permission === "granted") {
     notifHint.hidden = false;
-    notifHint.textContent = "התראות מאושרות. תזכורות מתוזמנות דורשות גם התקנת האפליקציה.";
+    notifHint.textContent = t("notif.granted");
   } else {
     notifHint.hidden = true;
   }
 }
 
 document.addEventListener("sofrim-yamim:settings-opened", refreshSettingsDialog);
+document.addEventListener("sofrim:language-changed", refreshSettingsDialog); // hint text follows a language switch made inside Settings
 
 notifToggle.addEventListener("change", () => {
   if (!NOTIFICATIONS_ENABLED) return;
@@ -204,7 +205,7 @@ notifToggle.addEventListener("change", () => {
       .then((result) => {
         refreshSettingsDialog();
         if (result === "granted" && typeof announce === "function") {
-          announce("התראות אושרו.");
+          announce(t("notif.grantedAnnounce"));
         }
         if (result === "granted") registerPeriodicSync(); // may have just become possible
       });
@@ -297,13 +298,13 @@ function pruneNotifiedMap(map, events) {
 async function showFallbackNotification(ev, diff) {
   const title = ev.name;
   const options = {
-    body: diff === 0 ? "היום" : "מחר",
+    body: diff === 0 ? t("time.today") : t("time.tomorrow"),
     tag: `sofrim-yamim-reminder-${ev.id}`,
     renotify: true,
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
-    dir: "rtl",
-    lang: "he",
+    dir: getLanguage() === "he" ? "rtl" : "ltr",
+    lang: getLanguage(),
   };
   if ("serviceWorker" in navigator) {
     try {

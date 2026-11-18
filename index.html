@@ -35,7 +35,7 @@
 <div id="liveStatus" class="sr-only" role="status" aria-live="polite"></div>
 
 <header class="app-header">
-  <h1>🗓️ סופרים ימים</h1>
+  <h1 data-i18n="app.heading">🗓️ סופרים ימים</h1>
   <div class="header-actions">
     <!-- 2026-08-22 audit: default-hidden in markup, not just via JS. Both
          feature flags are currently off and billing.js (last-loaded, per
@@ -43,10 +43,10 @@
          here too means there's no flash-of-visible-button before that
          script runs, and it fails *safe* (stays hidden) if billing.js is
          ever blocked/fails to load, instead of failing open. -->
-    <button id="settingsBtn" class="btn-icon btn-labeled" aria-label="הגדרות" hidden>⚙️<span class="btn-label">הגדרות</span></button>
-    <button id="shareBtn" class="btn-icon btn-labeled" aria-label="שתף" title="שתף עם חברים">📤<span class="btn-label">שיתוף</span></button>
-    <button id="presetsBtn" class="btn-icon btn-labeled" aria-label="חגים ומועדים">✡️<span class="btn-label">חגים</span></button>
-    <button id="addBtn" class="fab" aria-label="הוספת אירוע">+</button>
+    <button id="settingsBtn" class="btn-icon btn-labeled" aria-label="הגדרות" data-i18n-aria="header.settings" hidden>⚙️<span class="btn-label" data-i18n="header.settingsLabel">הגדרות</span></button>
+    <button id="shareBtn" class="btn-icon btn-labeled" aria-label="שתף" data-i18n-aria="header.share" title="שתף עם חברים" data-i18n-title="header.shareTitle">📤<span class="btn-label" data-i18n="header.shareLabel">שיתוף</span></button>
+    <button id="presetsBtn" class="btn-icon btn-labeled" aria-label="חגים ומועדים" data-i18n-aria="header.holidays">✡️<span class="btn-label" data-i18n="header.holidaysLabel">חגים</span></button>
+    <button id="addBtn" class="fab" aria-label="הוספת אירוע" data-i18n-aria="header.add">+</button>
   </div>
 </header>
 
@@ -56,17 +56,15 @@
   <!-- events render here -->
 </main>
 
-<p id="emptyState" class="empty-state" hidden>
-  אין עדיין אירועים. הוסיפו את הראשון.
-</p>
+<p id="emptyState" class="empty-state" data-i18n="main.empty" hidden>אין עדיין אירועים. הוסיפו את הראשון.</p>
 
 <!-- Add/Edit dialog -->
 <dialog id="eventDialog" aria-labelledby="dialogTitle">
   <form id="eventForm" method="dialog">
-    <h2 id="dialogTitle">אירוע חדש</h2>
+    <h2 id="dialogTitle" data-i18n="dialog.newEvent">אירוע חדש</h2>
 
-    <label for="eventName">שם האירוע</label>
-    <input id="eventName" type="text" required placeholder="לדוגמה: יום הולדת לאמא">
+    <label for="eventName" data-i18n="dialog.eventName">שם האירוע</label>
+    <input id="eventName" type="text" required placeholder="לדוגמה: יום הולדת לאמא" data-i18n-placeholder="dialog.eventNamePlaceholder">
 
     <!-- 2026-08-23: בחירת תאריך עברי -- toggle בין קלט לועזי (ברירת מחדל,
          זהה למה שהיה) לקלט עברי (יום/חודש/שנה, ר' hebrew-date.js). בשני
@@ -74,54 +72,54 @@
          אין מקור-אמת כפול) -- הבחירה העברית רק ממלאת אותו דרך
          initHebrewDatePicker() ב-app.js, אף קוד שמירה/ספירה/רינדור אחר לא
          צריך לדעת שהמצב הזה קיים בכלל. -->
-    <div class="date-mode-toggle" role="radiogroup" aria-label="סוג תאריך">
-      <button type="button" id="dateModeGregorianBtn" class="date-mode-btn" role="radio" aria-checked="true">לועזי</button>
-      <button type="button" id="dateModeHebrewBtn" class="date-mode-btn" role="radio" aria-checked="false">עברי</button>
+    <div class="date-mode-toggle" role="radiogroup" aria-label="סוג תאריך" data-i18n-aria="dialog.dateType">
+      <button type="button" id="dateModeGregorianBtn" class="date-mode-btn" role="radio" aria-checked="true" data-i18n="dialog.gregorian">לועזי</button>
+      <button type="button" id="dateModeHebrewBtn" class="date-mode-btn" role="radio" aria-checked="false" data-i18n="dialog.hebrew">עברי</button>
     </div>
 
     <div id="gregorianDateField">
-      <label for="eventDate">תאריך</label>
+      <label for="eventDate" data-i18n="dialog.date">תאריך</label>
       <input id="eventDate" type="date" required>
     </div>
 
     <div id="hebrewDateField" hidden>
-      <label id="hebrewDateLabel">תאריך עברי</label>
+      <label id="hebrewDateLabel" data-i18n="dialog.hebrewDate">תאריך עברי</label>
       <div class="hebrew-date-row" role="group" aria-labelledby="hebrewDateLabel">
-        <select id="hebrewDay" aria-label="יום בחודש"></select>
-        <select id="hebrewMonth" aria-label="חודש עברי"></select>
-        <select id="hebrewYear" aria-label="שנה עברית"></select>
+        <select id="hebrewDay" aria-label="יום בחודש" data-i18n-aria="dialog.hebrewDay"></select>
+        <select id="hebrewMonth" aria-label="חודש עברי" data-i18n-aria="dialog.hebrewMonth"></select>
+        <select id="hebrewYear" aria-label="שנה עברית" data-i18n-aria="dialog.hebrewYear"></select>
       </div>
       <p id="hebrewDatePreview" class="presets-hint" aria-live="polite"></p>
     </div>
 
-    <label for="eventEmoji">אייקון</label>
+    <label for="eventEmoji" data-i18n="dialog.icon">אייקון</label>
     <select id="eventEmoji">
-      <option value="🎉">🎉 חגיגה</option>
-      <option value="🎂">🎂 יום הולדת</option>
-      <option value="💍">💍 חתונה</option>
-      <option value="💃">💃 מסיבת רווקות</option>
-      <option value="🍻">🍻 מסיבת רווקים</option>
-      <option value="💧">💧 טבילה במקווה</option>
-      <option value="✈️">✈️ טיול</option>
-      <option value="🧳">🧳 חזרה מחופשה</option>
-      <option value="🎒">🎒 תחילת לימודים</option>
-      <option value="🕎">🕎 חג</option>
-      <option value="🕯️">🕯️ אזכרה</option>
-      <option value="🎓">🎓 סיום לימודים</option>
-      <option value="💼">💼 עבודה / יעד</option>
-      <option value="⭐">⭐ אחר</option>
+      <option value="🎉" data-i18n="emoji.celebration">🎉 חגיגה</option>
+      <option value="🎂" data-i18n="emoji.birthday">🎂 יום הולדת</option>
+      <option value="💍" data-i18n="emoji.wedding">💍 חתונה</option>
+      <option value="💃" data-i18n="emoji.bachelorette">💃 מסיבת רווקות</option>
+      <option value="🍻" data-i18n="emoji.bachelor">🍻 מסיבת רווקים</option>
+      <option value="💧" data-i18n="emoji.mikveh">💧 טבילה במקווה</option>
+      <option value="✈️" data-i18n="emoji.trip">✈️ טיול</option>
+      <option value="🧳" data-i18n="emoji.backFromVacation">🧳 חזרה מחופשה</option>
+      <option value="🎒" data-i18n="emoji.schoolStart">🎒 תחילת לימודים</option>
+      <option value="🕎" data-i18n="emoji.holiday">🕎 חג</option>
+      <option value="🕯️" data-i18n="emoji.memorial">🕯️ אזכרה</option>
+      <option value="🎓" data-i18n="emoji.graduation">🎓 סיום לימודים</option>
+      <option value="💼" data-i18n="emoji.work">💼 עבודה / יעד</option>
+      <option value="⭐" data-i18n="emoji.other">⭐ אחר</option>
     </select>
 
     <label class="favorite-toggle-row">
       <input type="checkbox" id="eventFavorite">
-      <span>⭐ הצג כמועדף על סמל האפליקציה</span>
+      <span data-i18n="dialog.favorite">⭐ הצג כמועדף על סמל האפליקציה</span>
     </label>
 
     <div class="dialog-actions">
-      <button type="button" id="cancelBtn" class="btn-secondary">ביטול</button>
-      <button type="button" id="deleteBtn" class="btn-danger" hidden>מחיקה</button>
-      <button type="button" id="calendarBtn" class="btn-secondary" hidden>📅 הוסף ליומן</button>
-      <button type="submit" id="saveBtn" class="btn-primary">שמירה</button>
+      <button type="button" id="cancelBtn" class="btn-secondary" data-i18n="button.cancel">ביטול</button>
+      <button type="button" id="deleteBtn" class="btn-danger" data-i18n="button.delete" hidden>מחיקה</button>
+      <button type="button" id="calendarBtn" class="btn-secondary" data-i18n="dialog.addToCalendar" hidden>📅 הוסף ליומן</button>
+      <button type="submit" id="saveBtn" class="btn-primary" data-i18n="button.save">שמירה</button>
     </div>
   </form>
 </dialog>
@@ -129,12 +127,12 @@
 <!-- Presets dialog: Israeli/Jewish holidays -->
 <dialog id="presetsDialog" aria-labelledby="presetsDialogTitle">
   <div class="presets-content">
-    <h2 id="presetsDialogTitle">הוספה מהירה — חגים ומועדים</h2>
-    <p class="presets-hint">בחרו אירוע כדי להוסיף אותו לרשימה שלכם.</p>
+    <h2 id="presetsDialogTitle" data-i18n="presets.title">הוספה מהירה — חגים ומועדים</h2>
+    <p class="presets-hint" data-i18n="presets.hint">בחרו אירוע כדי להוסיף אותו לרשימה שלכם.</p>
     <ul id="presetsList" class="presets-list"></ul>
-    <p id="presetsEmpty" class="presets-hint" hidden>רשימת החגים לא מעודכנת כרגע. תוכלו להוסיף אירוע ידנית.</p>
+    <p id="presetsEmpty" class="presets-hint" data-i18n="presets.empty" hidden>רשימת החגים לא מעודכנת כרגע. תוכלו להוסיף אירוע ידנית.</p>
     <div class="dialog-actions">
-      <button type="button" id="closePresetsBtn" class="btn-secondary">סגירה</button>
+      <button type="button" id="closePresetsBtn" class="btn-secondary" data-i18n="button.close">סגירה</button>
     </div>
   </div>
 </dialog>
@@ -142,9 +140,9 @@
 <!-- Settings dialog (Story 2.3) -->
 <dialog id="settingsDialog" aria-labelledby="settingsDialogTitle">
   <div class="presets-content">
-    <h2 id="settingsDialogTitle">הגדרות</h2>
+    <h2 id="settingsDialogTitle" data-i18n="settings.title">הגדרות</h2>
     <div class="settings-row" id="notifSettingsRow">
-      <label for="notifToggle" class="settings-row-label">התראות</label>
+      <label for="notifToggle" class="settings-row-label" data-i18n="settings.notifications">התראות</label>
       <input type="checkbox" id="notifToggle" class="settings-toggle" role="switch">
     </div>
     <p id="notifDeniedHint" class="presets-hint" hidden></p>
@@ -154,7 +152,7 @@
          running as an installed TWA; not shown at all in a regular
          browser tab, where a purchase attempt could never complete). -->
     <button type="button" id="purchaseBtn" class="btn-primary purchase-btn" hidden>
-      <span class="purchase-btn-label">הסרת פרסומות — $1.99</span>
+      <span class="purchase-btn-label" data-i18n="billing.removeAds">הסרת פרסומות — $1.99</span>
       <span class="purchase-spinner" hidden aria-hidden="true"></span>
     </button>
     <p id="purchaseError" class="presets-hint" role="alert" hidden></p>
@@ -163,24 +161,24 @@
          להעתקת-קישור ל-clipboard בדפדפן שולחני שלא תומך ב-Web Share API
          (ר' app.js, ליד רישום כפתורי דיאלוג-ההגדרות). המשוב על ה-fallback
          עובר דרך #liveStatus הקיים (announce()), אין צורך באלמנט נפרד. -->
-    <button type="button" id="shareAppBtn" class="btn-secondary">שיתוף האפליקציה</button>
+    <button type="button" id="shareAppBtn" class="btn-secondary" data-i18n="settings.shareApp">שיתוף האפליקציה</button>
 
     <!-- Language selector -->
     <div class="settings-row">
-      <label class="settings-row-label">שפה</label>
+      <label class="settings-row-label" data-i18n="settings.language">שפה</label>
       <div class="language-buttons">
-        <button type="button" id="langHebrewBtn" class="btn-secondary lang-btn lang-btn-selected">עברית</button>
-        <button type="button" id="langEnglishBtn" class="btn-secondary lang-btn">English</button>
+        <button type="button" id="langHebrewBtn" class="btn-secondary lang-btn lang-btn-selected" data-i18n="settings.hebrew">עברית</button>
+        <button type="button" id="langEnglishBtn" class="btn-secondary lang-btn" data-i18n="settings.english">English</button>
       </div>
     </div>
 
     <!-- יצירת קשר בוואטסאפ -- קישור wa.me רגיל, לא תלוי-JS. מספר הטלפון
          ניתן ע"י המשתמש (2026-08-23) -- אותו מספר נמצא בשימוש בשתי
          האפליקציות. -->
-    <a id="contactWhatsappLink" class="btn-secondary" href="https://wa.me/972504812348" target="_blank" rel="noopener noreferrer">יצירת קשר בוואטסאפ</a>
+    <a id="contactWhatsappLink" class="btn-secondary" href="https://wa.me/972504812348" target="_blank" rel="noopener noreferrer" data-i18n="settings.whatsapp">יצירת קשר בוואטסאפ</a>
 
     <div class="dialog-actions">
-      <button type="button" id="closeSettingsBtn" class="btn-secondary">סגירה</button>
+      <button type="button" id="closeSettingsBtn" class="btn-secondary" data-i18n="button.close">סגירה</button>
     </div>
   </div>
 </dialog>
@@ -188,11 +186,11 @@
 <!-- Swipe-to-delete confirmation sheet (Story 1.7) -->
 <dialog id="deleteConfirmDialog" aria-labelledby="deleteConfirmTitle">
   <div class="presets-content">
-    <h2 id="deleteConfirmTitle">מחיקת אירוע</h2>
+    <h2 id="deleteConfirmTitle" data-i18n="delete.title">מחיקת אירוע</h2>
     <p id="deleteConfirmText" class="presets-hint"></p>
     <div class="dialog-actions">
-      <button type="button" id="deleteConfirmCancelBtn" class="btn-secondary">ביטול</button>
-      <button type="button" id="deleteConfirmOkBtn" class="btn-danger">מחיקה</button>
+      <button type="button" id="deleteConfirmCancelBtn" class="btn-secondary" data-i18n="button.cancel">ביטול</button>
+      <button type="button" id="deleteConfirmOkBtn" class="btn-danger" data-i18n="button.delete">מחיקה</button>
     </div>
   </div>
 </dialog>
@@ -206,7 +204,7 @@
      window.adsbygoogle) is billing.js's job, gated on hasRemovedAds() --
      see there. A paying user should never pay the network/battery cost
      of an ad request just because the (hidden) slot still exists. -->
-<div id="ad-banner" class="ad-banner" aria-label="פרסומת">
+<div id="ad-banner" class="ad-banner" aria-label="פרסומת" data-i18n-aria="main.ad">
   <!--
     ⚠️ PLACEHOLDER data-ad-client / data-ad-slot -- see the loader
     <script> comment in <head>. Both must be replaced with real AdSense

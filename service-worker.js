@@ -1,4 +1,4 @@
-const CACHE_NAME = "sofrim-yamim-v39";
+const CACHE_NAME = "sofrim-yamim-v40";
 // Relative (no leading "/"): resolved against this file's own location, so
 // this works whether the app is deployed at a domain root or under a
 // subpath (e.g. a GitHub Pages project site at /sofrim-yamim/) without any
@@ -8,6 +8,7 @@ const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
+  "./i18n.js",
   "./app.js",
   "./holidays.js",
   "./hebrew-date.js",
@@ -116,6 +117,22 @@ async function getAllEvents() {
   }
 }
 
+// The worker can't read the page's saved language choice (no localStorage
+// here), so it follows the device with the same rules as i18n.js's
+// detectLanguage(): he/iw -> Hebrew, en -> English, else Hebrew in Israel.
+function workerLanguage() {
+  try {
+    const tags = (self.navigator.languages && self.navigator.languages.length) ? self.navigator.languages : [self.navigator.language];
+    for (const tag of tags) {
+      const code = String(tag || "").toLowerCase().split(/[-_]/)[0];
+      if (code === "he" || code === "iw") return "he";
+      if (code === "en") return "en";
+    }
+    if (Intl.DateTimeFormat().resolvedOptions().timeZone === "Asia/Jerusalem") return "he";
+  } catch (e) {}
+  return "en";
+}
+
 function tomorrowDateStr() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -133,6 +150,7 @@ async function notifyForTomorrow() {
     const events = await getAllEvents();
     const tomorrow = tomorrowDateStr();
     const matches = events.filter((ev) => ev && ev.date === tomorrow && ev.name);
+    const lang = workerLanguage();
     console.debug(`[sofrim-yamim] notifyForTomorrow: ${matches.length} match(es) for ${tomorrow}`);
     for (const ev of matches) {
       try {
@@ -140,13 +158,13 @@ async function notifyForTomorrow() {
         // does not silently no-op) -- the try/catch here is load-bearing,
         // not a defensive extra.
         await self.registration.showNotification(ev.name, {
-          body: "מחר",
+          body: lang === "he" ? "מחר" : "Tomorrow",
           tag: `sofrim-yamim-reminder-${ev.id}`, // shared with notifications.js's fallback check (Story 2.5) -- same tag on purpose, so the two mechanisms collapse into one notification instead of showing two
           renotify: true, // re-alert (sound/vibration) even on a same-tag replacement -- a silent retry that never actually surfaces defeats a best-effort feature that may need exactly that retry
           icon: "./icons/icon-192.png",
           badge: "./icons/icon-192.png",
-          dir: "rtl",
-          lang: "he",
+          dir: lang === "he" ? "rtl" : "ltr",
+          lang,
         });
       } catch (err) {
         console.debug("[sofrim-yamim] showNotification failed (non-blocking):", err);

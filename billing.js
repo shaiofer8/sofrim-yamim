@@ -154,7 +154,7 @@ function setPurchaseButtonState(state) {
   purchaseBtn.setAttribute("aria-busy", String(state === "pending"));
   purchaseSpinner.hidden = state !== "pending";
   if (state === "done") {
-    purchaseBtnLabel.textContent = "הפרסומות הוסרו.";
+    purchaseBtnLabel.textContent = t("billing.adsRemoved");
   }
 }
 
@@ -197,7 +197,7 @@ async function purchaseRemoveAds() {
     savePurchaseState(true);
     refreshAdBanner();
     setPurchaseButtonState("done");
-    if (typeof announce === "function") announce("הפרסומות הוסרו.");
+    if (typeof announce === "function") announce(t("billing.adsRemoved"));
 
     // Isolated in its own try/catch, deliberately outside the outer
     // catch below: the purchase is already recorded and reflected in the
@@ -220,7 +220,7 @@ async function purchaseRemoveAds() {
       return;
     }
     console.debug("[sofrim-yamim] purchase failed (non-blocking -- the free app keeps working):", err);
-    purchaseErrorEl.textContent = "הרכישה לא הושלמה. נסו שוב.";
+    purchaseErrorEl.textContent = t("billing.failed");
     // Unhiding a role="alert" element announces it natively -- no
     // separate announce() call needed (unlike the success path above,
     // which has no equivalent native semantic to lean on).
@@ -259,7 +259,7 @@ async function refreshPurchaseLabelPrice() {
     const service = await window.getDigitalGoodsService("https://play.google.com/billing");
     const [itemDetails] = await service.getDetails([PRODUCT_SKU]);
     if (itemDetails?.price?.value && itemDetails?.price?.currency && purchaseBtnLabel) {
-      purchaseBtnLabel.textContent = `הסרת פרסומות — ${itemDetails.price.value} ${itemDetails.price.currency}`;
+      purchaseBtnLabel.textContent = t("billing.removeAdsPrice", { price: `${itemDetails.price.value} ${itemDetails.price.currency}` });
     }
   } catch (err) {
     console.debug("[sofrim-yamim] could not fetch live price, keeping the static label:", err);
@@ -268,6 +268,11 @@ async function refreshPurchaseLabelPrice() {
 
 purchaseBtn?.addEventListener("click", purchaseRemoveAds);
 document.addEventListener("sofrim-yamim:settings-opened", refreshPurchaseButton);
+// A language switch re-applies the static "$1.99" label (data-i18n); redo
+// the done/live-price label on top of it, unless a purchase is mid-flight.
+document.addEventListener("sofrim:language-changed", () => {
+  if (purchaseBtn && !purchaseBtn.hidden && !purchaseInProgress) refreshPurchaseButton();
+});
 
 // Story 3.3 / AD-4: restore on every cold start (and again whenever the
 // app returns to the foreground -- a purchase can complete via Play
@@ -309,7 +314,7 @@ async function restorePurchases() {
     const owned = Array.isArray(purchases) && purchases.some((p) => p?.itemId === PRODUCT_SKU);
     if (owned && !hasRemovedAds()) {
       savePurchaseState(true);
-      if (typeof announce === "function") announce("הפרסומות הוסרו."); // same outcome as a manual purchase (Story 3.2) -- same announcement, in case this resolves while the user isn't even looking at Settings
+      if (typeof announce === "function") announce(t("billing.adsRemoved")); // same outcome as a manual purchase (Story 3.2) -- same announcement, in case this resolves while the user isn't even looking at Settings
     }
   } catch (err) {
     // Silent per AD-6-style convention: this is a background

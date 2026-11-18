@@ -31,6 +31,10 @@ function handleReferralDeepLink() {
 }
 handleReferralDeepLink();
 
+// Static markup (data-i18n*) is translated here, before the first render,
+// so an English user never sees the Hebrew that index.html ships with.
+applyTranslations();
+
 const listEl = document.getElementById("eventList");
 const emptyEl = document.getElementById("emptyState");
 const heroEl = document.getElementById("heroCard");
@@ -124,7 +128,7 @@ function saveEvents(events) {
     // in a broken state with no feedback. Tell the caller so it doesn't
     // proceed as though the save succeeded.
     console.warn("saveEvents: localStorage.setItem failed:", err);
-    if (typeof announce === "function") announce("השמירה נכשלה. נסו שוב.");
+    if (typeof announce === "function") announce(t("message.saveFailed"));
     return false;
   }
   // Story 2.1: keep the Service Worker's IndexedDB snapshot in sync on
@@ -145,12 +149,14 @@ function daysUntil(dateStr) {
   return Math.round((target - today) / 86400000);
 }
 
+// Name kept for history: shows a *Gregorian* date in the active language
+// (he-IL long form in Hebrew, en-US "Sep 11, 2026" in English -- i18n.js).
 function formatHebrewDate(dateStr) {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" });
+  return formatDisplayDate(dateStr);
 }
 
 function countLabel(diff) {
+  if (getLanguage() === "en") return countLabelEn(diff);
   if (diff === 0) return { num: "היום", label: "🎉" };
   if (diff === 1) return { num: "מחר", label: "" };
   // 2026-08-22 audit: Hebrew uses the dual form "יומיים" for exactly two
@@ -161,6 +167,19 @@ function countLabel(diff) {
   if (diff === -1) return { num: "אתמול", label: "" };
   if (diff === -2) return { num: "יומיים", label: "עברו" };
   return { num: Math.abs(diff), label: "ימים עברו" };
+}
+
+// English mirrors the Hebrew cases above (Today / Tomorrow / N days /
+// Yesterday / N days ago); the Hebrew dual "יומיים" is just "2 days".
+// `word` marks a text (non-numeric) count so CSS can size it to fit.
+function countLabelEn(diff) {
+  const plural = (n, one, many) => (new Intl.PluralRules("en-US").select(n) === "one" ? one : many);
+  if (diff === 0) return { num: t("time.today"), label: "🎉", word: true };
+  if (diff === 1) return { num: t("time.tomorrow"), label: "", word: true };
+  if (diff === -1) return { num: t("time.yesterday"), label: "", word: true };
+  if (diff > 1) return { num: diff, label: plural(diff, t("time.day"), t("time.days")) };
+  const n = Math.abs(diff);
+  return { num: n, label: plural(n, t("time.dayAgo"), t("time.daysAgo")) };
 }
 
 // Speaks the exact same count text already shown on screen (countLabel's
@@ -185,24 +204,24 @@ function renderHero(ev) {
   }
 
   const diff = daysUntil(ev.date);
-  const { num, label } = countLabel(diff);
+  const { num, label, word } = countLabel(diff);
 
   heroEl.hidden = false;
   heroEl.innerHTML = `
     <div class="hero-emoji">${escapeHtml(ev.emoji)}</div>
     <div class="hero-info">
-      <div class="hero-name">${escapeHtml(ev.name)}${ev.isFavorite ? ' <span class="favorite-star" aria-label="מועדף">⭐</span>' : ""}</div>
+      <div class="hero-name">${escapeHtml(ev.name)}${ev.isFavorite ? ` <span class="favorite-star" aria-label="${escapeHtml(t("main.favorite"))}">⭐</span>` : ""}</div>
       <div class="hero-date">${formatHebrewDate(ev.date)}</div>
     </div>
     <div class="hero-count">
-      <span class="num">${num}</span>
+      <span class="num${word ? " is-word" : ""}">${num}</span>
       <span class="label">${label}</span>
     </div>
   `;
   heroEl.dataset.id = ev.id;
   heroEl.setAttribute("role", "button");
   heroEl.setAttribute("tabindex", "0");
-  heroEl.setAttribute("aria-label", `אירוע קרוב ביותר: ${ev.name}, ${ariaCountText(num, label)}`);
+  heroEl.setAttribute("aria-label", t("main.heroAria", { name: ev.name, count: ariaCountText(num, label) }));
   heroEl.onclick = () => openEditDialog(ev);
   heroEl.onkeydown = (e) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -233,7 +252,7 @@ function render() {
 
   for (const ev of restEvents) {
     const diff = daysUntil(ev.date);
-    const { num, label } = countLabel(diff);
+    const { num, label, word } = countLabel(diff);
 
     const card = document.createElement("div");
     card.className = "event-card" + (diff < 0 ? " past" : "");
@@ -241,11 +260,11 @@ function render() {
     card.innerHTML = `
       <div class="event-emoji">${escapeHtml(ev.emoji)}</div>
       <div class="event-info">
-        <div class="event-name">${escapeHtml(ev.name)}${ev.isFavorite ? ' <span class="favorite-star" aria-label="מועדף">⭐</span>' : ""}</div>
+        <div class="event-name">${escapeHtml(ev.name)}${ev.isFavorite ? ` <span class="favorite-star" aria-label="${escapeHtml(t("main.favorite"))}">⭐</span>` : ""}</div>
         <div class="event-date">${formatHebrewDate(ev.date)}</div>
       </div>
       <div class="event-count">
-        <span class="num">${num}</span>
+        <span class="num${word ? " is-word" : ""}">${num}</span>
         <span class="label">${label}</span>
       </div>
     `;
@@ -374,7 +393,7 @@ let pendingDeleteId = null;
 
 function openDeleteConfirm(ev) {
   pendingDeleteId = ev.id;
-  deleteConfirmText.textContent = `למחוק את "${ev.name}"?`;
+  deleteConfirmText.textContent = t("delete.confirm", { name: ev.name });
   deleteConfirmDialog.showModal();
 }
 
@@ -454,7 +473,7 @@ function populateHebrewYearSelect(selectedYear) {
   for (let y = todayHebrewYear - 1; y <= todayHebrewYear + 10; y++) {
     const opt = document.createElement("option");
     opt.value = String(y);
-    opt.textContent = HebrewDate.toHebrewNumeral(y % 1000);
+    opt.textContent = getLanguage() === "en" ? String(y) : HebrewDate.toHebrewNumeral(y % 1000);
     hebrewYearSelect.appendChild(opt);
   }
   hebrewYearSelect.value = String(selectedYear);
@@ -465,8 +484,8 @@ function populateHebrewMonthSelect(hebrewYear, selectedMonthName) {
   hebrewMonthSelect.innerHTML = "";
   for (const month of table.months) {
     const opt = document.createElement("option");
-    opt.value = month.name;
-    opt.textContent = month.name;
+    opt.value = month.name; // always the Hebrew ICU name -- the lookup key, in both languages
+    opt.textContent = getLanguage() === "en" ? HebrewDate.monthNameEn(month) : month.name;
     hebrewMonthSelect.appendChild(opt);
   }
   const hasSelected = table.months.some((m) => m.name === selectedMonthName);
@@ -480,7 +499,7 @@ function populateHebrewDaySelect(hebrewYear, monthName, selectedDay) {
   for (let d = 1; d <= month.days; d++) {
     const opt = document.createElement("option");
     opt.value = String(d);
-    opt.textContent = HebrewDate.toHebrewNumeral(d);
+    opt.textContent = getLanguage() === "en" ? String(d) : HebrewDate.toHebrewNumeral(d);
     hebrewDaySelect.appendChild(opt);
   }
   // חודש שהתחלף עלול להיות קצר יותר (29 במקום 30 ימים) -- הצמדה ליום
@@ -499,7 +518,7 @@ function syncEventDateFromHebrewSelects() {
   dateInput.value = iso;
   // formatHebrewDate() (למרות השם) מציגה תאריך *לועזי* בעברית -- בדיוק מה
   // שרוצים כאן: שקיפות על מה שנשמר בפועל "מאחורי הקלעים".
-  hebrewDatePreview.textContent = `בלועזי: ${formatHebrewDate(iso)}`;
+  hebrewDatePreview.textContent = t("dialog.gregorianPreview", { date: formatHebrewDate(iso) });
 }
 
 // שולף Hebrew y/m/d מהערך הנוכחי של #eventDate -- בין אם המשתמש הזין
@@ -549,7 +568,8 @@ hebrewDaySelect.addEventListener("change", syncEventDateFromHebrewSelects);
 
 function openAddDialog() {
   editingId = null;
-  dialogTitle.textContent = "אירוע חדש";
+  dialogTitle.dataset.i18n = "dialog.newEvent";
+  dialogTitle.textContent = t("dialog.newEvent");
   form.reset();
   emojiInput.value = "🎉";
   favoriteInput.checked = false;
@@ -561,7 +581,8 @@ function openAddDialog() {
 
 function openEditDialog(ev) {
   editingId = ev.id;
-  dialogTitle.textContent = "עריכת אירוע";
+  dialogTitle.dataset.i18n = "dialog.editEvent";
+  dialogTitle.textContent = t("dialog.editEvent");
   nameInput.value = ev.name;
   dateInput.value = ev.date;
   emojiInput.value = ev.emoji;
@@ -619,7 +640,7 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
   // was then trimmed down to "" at save time, producing a blank/invisible
   // card with a broken aria-label.
   if (!nameInput.value.trim()) {
-    nameInput.setCustomValidity("נא להזין שם אירוע");
+    nameInput.setCustomValidity(t("dialog.nameRequired"));
     form.reportValidity();
     nameInput.setCustomValidity("");
     return;
@@ -666,7 +687,7 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
     // lose their place after saving an edit.
     focusEventRow(editedId);
   }
-  announce("האירוע נשמר.");
+  announce(t("message.saved"));
 });
 
 // Story 1.7: deleteBtn (inside the edit dialog) now routes through the
@@ -677,7 +698,7 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
 // mental model for a single "delete an event" action.
 deleteBtn.addEventListener("click", () => {
   if (!editingId) return;
-  const name = nameInput.value.trim() || "האירוע";
+  const name = nameInput.value.trim() || t("dialog.unnamedEvent");
   const id = editingId;
   dialog.close();
   openDeleteConfirm({ id, name });
@@ -752,7 +773,7 @@ function downloadIcs(ev) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${ev.name || "אירוע"}.ics`.replace(/[\\/:*?"<>|]/g, "_");
+  a.download = `${ev.name || t("dialog.icsFallbackName")}.ics`.replace(/[\\/:*?"<>|]/g, "_");
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -766,7 +787,7 @@ calendarBtn.addEventListener("click", () => {
   const ev = loadEvents().find((e) => e.id === editingId);
   if (!ev) return;
   downloadIcs(ev);
-  announce("קובץ יומן הורד.");
+  announce(t("message.icsDownloaded"));
 });
 
 // Reset on the dialog's own `close` event (fires for every close path --
@@ -792,7 +813,7 @@ deleteConfirmOkBtn.addEventListener("click", () => {
   render();
   refreshAppBadge(); // the deleted event may have been the favorite
   document.getElementById("addBtn").focus();
-  announce("האירוע נמחק.");
+  announce(t("message.deleted"));
 });
 
 // Story 1.6 / FR-5: holidays.js needs manual yearly upkeep (see its own
@@ -827,6 +848,12 @@ function getValidHolidayPresets() {
   return valid;
 }
 
+// Holiday display name in the active language (holidays.js keeps the
+// Hebrew name as its fallback; `key` maps into the i18n dictionaries).
+function holidayName(h) {
+  return h.key ? t(`holiday.${h.key}`) : h.name;
+}
+
 // Presets (holidays) dialog
 document.getElementById("presetsBtn").addEventListener("click", () => {
   presetsList.innerHTML = "";
@@ -838,31 +865,32 @@ document.getElementById("presetsBtn").addEventListener("click", () => {
     // every other user-facing name in this app goes through escapeHtml()
     // -- keep this one consistent so it doesn't become a real gap the day
     // this content source ever changes (e.g. becomes fetched/remote).
-    li.innerHTML = `<span>${escapeHtml(h.emoji)}</span><span class="p-name">${escapeHtml(h.name)}</span><span class="p-date">${formatHebrewDate(h.date)}</span>`;
+    const hName = holidayName(h);
+    li.innerHTML = `<span>${escapeHtml(h.emoji)}</span><span class="p-name">${escapeHtml(hName)}</span><span class="p-date">${formatHebrewDate(h.date)}</span>`;
     // No role="button" here (unlike Hero/Compact Row, which are plain
     // divs with no prior semantics to lose): this is a real <li> in a
     // <ul>, and keeping the implicit listitem role lets a screen reader
     // announce position/count ("3 of 14") while still staying keyboard-
     // operable via tabindex + the keydown handler below.
     li.setAttribute("tabindex", "0");
-    li.setAttribute("aria-label", `${h.name}, ${formatHebrewDate(h.date)}`);
+    li.setAttribute("aria-label", `${hName}, ${formatHebrewDate(h.date)}`);
     const addPreset = () => {
       const events = loadEvents();
       // 2026-08-22 audit: nothing stopped the same holiday being added
       // twice (e.g. tapping it again after reopening the dialog) --
       // silently produced duplicate cards with no warning.
-      if (events.some((ev) => ev.name === h.name && ev.date === h.date)) {
+      if (events.some((ev) => ev.name === hName && ev.date === h.date)) {
         presetsDialog.close();
         return;
       }
       const id = crypto.randomUUID();
-      events.push({ id, name: h.name, date: h.date, emoji: h.emoji });
+      events.push({ id, name: hName, date: h.date, emoji: h.emoji });
       if (!saveEvents(events)) return;
       presetsDialog.close();
       render();
       celebrateNewEvent(id);
       dispatchEventAdded(id); // Story 2.2 hooks in on this
-      announce("האירוע נשמר.");
+      announce(t("message.saved"));
     };
     li.addEventListener("click", addPreset);
     li.addEventListener("keydown", (e) => {
@@ -932,7 +960,7 @@ if (shareAppBtnEl) {
   shareAppBtnEl.addEventListener("click", async () => {
     const shareData = {
       title: document.title,
-      text: "סופרים ימים — ספירה לאחור לאירועים, חגים ומועדים",
+      text: t("app.shareText"),
       url: location.origin + location.pathname,
     };
     if (navigator.share) {
@@ -949,76 +977,50 @@ if (shareAppBtnEl) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try {
         await navigator.clipboard.writeText(shareData.url);
-        announce("הקישור לאפליקציה הועתק");
+        announce(t("message.linkCopied"));
         return;
       } catch (err) {
         // ממשיך למפלט prompt() למטה.
       }
     }
-    window.prompt("העתיקו את הקישור לאפליקציה:", shareData.url);
+    window.prompt(t("message.copyLinkPrompt"), shareData.url);
   });
 }
 
 render();
 refreshAppBadge(); // cold start: reflect whatever favorite (if any) was already saved
 
-// Language selection (i18n)
-document.addEventListener("DOMContentLoaded", () => {
-  const langHebrewBtn = document.getElementById("langHebrewBtn");
-  const langEnglishBtn = document.getElementById("langEnglishBtn");
-
-  if (langHebrewBtn && langEnglishBtn) {
-    langHebrewBtn.addEventListener("click", () => {
-      setLanguage("he");
-      updateLanguageButtons();
-      render(); // Re-render with new language
-    });
-
-    langEnglishBtn.addEventListener("click", () => {
-      setLanguage("en");
-      updateLanguageButtons();
-      render(); // Re-render with new language
-    });
-
-    // Set initial button state
-    updateLanguageButtons();
-  }
-
-  // Listen for language changes from other tabs/windows
-  document.addEventListener("sofrim:language-changed", () => {
-    render();
-  });
-});
-
-function updateLanguageUI() {
-  // Update button states
-  updateLanguageButtons();
-
-  // Update aria-labels and content
-  const settingsBtn = document.getElementById("settingsBtn");
-  const presetsBtn = document.getElementById("presetsBtn");
-  const addBtn = document.getElementById("addBtn");
-  const emptyEl = document.getElementById("emptyState");
-
-  if (settingsBtn) settingsBtn.setAttribute("aria-label", t("header.settings"));
-  if (presetsBtn) presetsBtn.setAttribute("aria-label", t("header.holidays"));
-  if (addBtn) addBtn.setAttribute("aria-label", t("header.add"));
-  if (emptyEl) emptyEl.textContent = t("main.empty");
-}
-
+// Language selection (i18n). setLanguage() (i18n.js) re-applies every
+// data-i18n string and fires "sofrim:language-changed"; everything this
+// file builds in code is re-rendered from that one listener, so a switch
+// takes effect immediately with no reload.
 function updateLanguageButtons() {
   const lang = getLanguage();
   const langHebrewBtn = document.getElementById("langHebrewBtn");
   const langEnglishBtn = document.getElementById("langEnglishBtn");
-
-  if (langHebrewBtn) {
-    langHebrewBtn.classList.toggle("lang-btn-selected", lang === "he");
-  }
-
-  if (langEnglishBtn) {
-    langEnglishBtn.classList.toggle("lang-btn-selected", lang === "en");
-  }
+  if (langHebrewBtn) langHebrewBtn.classList.toggle("lang-btn-selected", lang === "he");
+  if (langEnglishBtn) langEnglishBtn.classList.toggle("lang-btn-selected", lang === "en");
 }
+
+document.getElementById("langHebrewBtn")?.addEventListener("click", () => setLanguage("he"));
+document.getElementById("langEnglishBtn")?.addEventListener("click", () => setLanguage("en"));
+updateLanguageButtons();
+
+document.addEventListener("sofrim:language-changed", () => {
+  updateLanguageButtons();
+  render();
+  // An open Hebrew-date picker rebuilds its option labels in the new
+  // language, keeping the same selection.
+  if (dateInputMode === "hebrew" && !hebrewDateField.hidden) {
+    const year = Number(hebrewYearSelect.value);
+    const month = hebrewMonthSelect.value;
+    const day = Number(hebrewDaySelect.value);
+    populateHebrewYearSelect(year);
+    populateHebrewMonthSelect(year, month);
+    populateHebrewDaySelect(year, month, day);
+    syncEventDateFromHebrewSelects();
+  }
+});
 
 // PWA: register service worker
 if ("serviceWorker" in navigator) {

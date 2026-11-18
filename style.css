@@ -635,6 +635,10 @@ a.btn-secondary {
   padding: 10px 14px;
   min-height: 48px; /* Story 1.5: 48dp touch target */
   cursor: pointer;
+  /* Never squeeze a row below its content inside the scrolling list --
+     a name that wraps to several lines (long English holiday names) would
+     otherwise overflow into the next row. */
+  flex-shrink: 0;
 }
 
 .presets-list li .p-name {
@@ -906,4 +910,25 @@ a.btn-secondary {
   color: #fff;
   font-weight: 600;
 }
+
+/* English: a text count ("Today", "Tomorrow", "Yesterday") is far wider
+   than the Hebrew words at the same size, so it gets a smaller size that
+   still reads as the headline. Scoped to lang="en" -- Hebrew is untouched. */
+:root[lang="en"] .hero-count .num.is-word {
+  font-size: 1.9rem;
+  line-height: 1.1;
+}
+
+:root[lang="en"] .event-count .num.is-word {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+/* English Hebrew-date picker: month names ("Cheshvan", "Adar II") are wider
+   than the day/year numbers, so the three selects size to their content
+   instead of splitting the row into equal thirds. */
+:root[lang="en"] .hebrew-date-row select {
+  flex: 1 1 auto;
+  width: auto;
+  padding-inline: 10px;
 }

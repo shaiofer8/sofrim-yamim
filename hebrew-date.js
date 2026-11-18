@@ -126,7 +126,22 @@ function toHebrewNumeral(num) {
   return letters.slice(0, -1) + "״" + letters.slice(-1); // gershayim before the last letter
 }
 
+// English display name for a month from buildHebrewYearTable() (the
+// picker's value/lookup key stays the Hebrew ICU name). ICU's own English
+// spellings are mapped to the common transliterations users expect.
+const EN_CAL_MONTH_FORMATTER = new Intl.DateTimeFormat("en-u-ca-hebrew", { month: "long" });
+const EN_MONTH_SPELLING = {
+  Tishri: "Tishrei",
+  Heshvan: "Cheshvan",
+  Tamuz: "Tammuz",
+};
+function monthNameEn(month) {
+  const icu = EN_CAL_MONTH_FORMATTER.format(new Date(month.firstIso + "T00:00:00"));
+  return EN_MONTH_SPELLING[icu] || icu;
+}
+
 window.HebrewDate = {
+  monthNameEn,
   gregorianToHebrewYMD,
   buildHebrewYearTable,
   hebrewToGregorianISO,
