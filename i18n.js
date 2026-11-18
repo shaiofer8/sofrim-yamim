@@ -152,7 +152,7 @@ const i18nData = {
     "holiday.tishaBav": "תשעה באב",
 
     // Referral
-    "referral.shareText": "בואו לקרוא ספרים בסופרים ימים!",
+    "referral.shareText": "סופרים את הימים לרגעים החשובים – עם סופרים ימים!",
   },
   en: {
     // App
