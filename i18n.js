@@ -170,8 +170,30 @@ const i18nData = {
   }
 };
 
-// Current language (default: Hebrew)
-let currentLanguage = localStorage.getItem('sofrim-lang') || 'he';
+// Current language: a saved manual choice wins; otherwise follow the device.
+// Hebrew phones (he / legacy iw) get Hebrew, English phones get English, and any
+// other device language gets Hebrew inside Israel and English everywhere else.
+function detectLanguage() {
+  try {
+    const tags = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language];
+    for (const tag of tags) {
+      const code = String(tag || '').toLowerCase().split(/[-_]/)[0];
+      if (code === 'he' || code === 'iw') return 'he';
+      if (code === 'en') return 'en';
+    }
+    if (Intl.DateTimeFormat().resolvedOptions().timeZone === 'Asia/Jerusalem') return 'he';
+  } catch (e) {}
+  return 'en';
+}
+
+function savedLanguage() {
+  try {
+    const v = localStorage.getItem('sofrim-lang');
+    return v === 'he' || v === 'en' ? v : null;
+  } catch (e) { return null; }
+}
+
+let currentLanguage = savedLanguage() || detectLanguage();
 
 // Getter function
 function t(key) {
@@ -182,7 +204,7 @@ function t(key) {
 function setLanguage(lang) {
   if (i18nData[lang]) {
     currentLanguage = lang;
-    localStorage.setItem('sofrim-lang', lang);
+    try { localStorage.setItem('sofrim-lang', lang); } catch (e) {}
     updatePageLanguage();
   }
 }
@@ -206,6 +228,11 @@ function updatePageLanguage() {
     detail: { language: currentLanguage }
   }));
 }
+
+// Apply direction and lang before first paint (index.html ships he/rtl)
+document.documentElement.lang = currentLanguage;
+document.documentElement.dir = currentLanguage === 'he' ? 'rtl' : 'ltr';
+document.addEventListener('DOMContentLoaded', () => { document.title = t('app.title'); });
 
 // Make functions available globally
 window.t = t;
